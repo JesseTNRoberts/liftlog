@@ -1,0 +1,25 @@
+{
+  "units": "lb",
+  "rotation": {
+    "Mon": { "focus": "Hips", "note": "Long-run day: keep it light, near the end of the run", "exercises": ["Single-leg press", "Hip abduction"] },
+    "Tue": { "focus": "Calves & hamstrings", "exercises": ["Seated calf raise", "Hamstring curl"] },
+    "Wed": { "focus": "Hips", "exercises": ["Single-leg press", "Hip abduction"] },
+    "Thu": { "focus": "Upper body & core", "exercises": ["Chest press", "Seated row", "Side plank"] },
+    "Fri": { "focus": "Hips", "note": "Long-run day: keep it light, near the end of the run", "exercises": ["Single-leg press", "Hip abduction"] },
+    "Sat": { "focus": "Rest from gym", "note": "Long run or adventure", "exercises": [] },
+    "Sun": { "focus": "Mobility", "note": "10 minutes stretching hips and calves", "exercises": [] }
+  },
+  "exercises": {
+    "Single-leg press":  { "sides": ["L", "R"], "targetReps": 5, "sets": 2, "step": 10, "cue": "Knee tracks over toes" },
+    "Hip abduction":     { "sides": ["both"],   "targetReps": 5, "sets": 2, "step": 5,  "cue": "Slow, 1–2 s hold at the widest point" },
+    "Seated calf raise": { "sides": ["both"],   "targetReps": 8, "sets": 2, "step": 10, "start": "Find a weight for 8 hard reps" },
+    "Hamstring curl":    { "sides": ["both"],   "targetReps": 8, "sets": 2, "step": 5,  "start": "Find a weight for 8 hard reps" },
+    "Chest press":       { "sides": ["both"],   "targetReps": 8, "sets": 2, "step": 5,  "start": "Find a weight for 8 hard reps" },
+    "Seated row":        { "sides": ["both"],   "targetReps": 8, "sets": 2, "step": 5,  "start": "Find a weight for 8 hard reps", "cue": "Supports the back" },
+    "Side plank":        { "sides": ["L", "R"], "targetReps": 30, "unit": "s", "sets": 2, "step": 10, "start": "30 s each side" }
+  },
+  "baselines": [
+    { "source": "Hevy, before Oct 26", "exercise": "Leg press (both legs)", "sets": "175×5, 215×5, 235×5, 245×5" },
+    { "source": "Hevy, before Oct 26", "exercise": "Hip abduction", "sets": "145×7, 160×5, 175×5" }
+  ]
+}

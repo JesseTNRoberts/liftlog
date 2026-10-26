@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lift Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f5f1; --card: #ffffff; --ink: #1d1d1b; --muted: #6d6b65; --line: #e4e2db;
+    --accent: #d2581f; --accent-soft: #fbe7dc; --left: #2f6fb3; --right: #d2581f; --both: #3a8a5a;
+    --heat0: #ebe9e2; --heat1: #9fd1b0; --heat2: #3a8a5a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141413; --card: #1f1f1d; --ink: #f1efe8; --muted: #9c9a92; --line: #33322f;
+      --accent: #f07a3f; --accent-soft: #3a2519; --left: #6ea6e6; --right: #f07a3f; --both: #63bb85;
+      --heat0: #2a2a27; --heat1: #2f5c40; --heat2: #63bb85;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 Inter, system-ui, sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 20px 16px 48px; }
+  header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px; }
+  h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 28px 0 10px; font-weight: 600; }
+  .date { color: var(--muted); font-size: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .days { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; }
+  .days button { flex: 1; min-width: 40px; border: 1px solid var(--line); background: var(--card); color: var(--muted);
+    border-radius: 999px; padding: 6px 0; font: 600 13px Inter, sans-serif; cursor: pointer; }
+  .days button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .days button.today:not(.on) { color: var(--accent); border-color: var(--accent); }
+  .focus { font-size: 20px; font-weight: 700; margin: 0; }
+  .note { color: var(--muted); font-size: 14px; margin: 4px 0 0; }
+  .ex { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 14px; }
+  .ex-name { font-weight: 600; display: flex; justify-content: space-between; gap: 8px; }
+  .ex-name small { color: var(--muted); font-weight: 400; }
+  .targets { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+  .target { flex: 1; min-width: 120px; background: var(--accent-soft); border-radius: 10px; padding: 10px 12px; }
+  .target .side { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+  .target .big { font: 500 22px "JetBrains Mono", monospace; }
+  .target .last { font-size: 12px; color: var(--muted); }
+  .cue { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .stat .v { font: 500 24px "JetBrains Mono", monospace; }
+  .stat .l { font-size: 12px; color: var(--muted); }
+  .chart { margin-bottom: 12px; }
+  .chart-title { font-weight: 600; margin-bottom: 4px; display: flex; justify-content: space-between; }
+  .legend { font-size: 12px; color: var(--muted); display: flex; gap: 12px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+  svg text { fill: var(--muted); font: 11px Inter, sans-serif; }
+  .heat { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 1fr); gap: 3px; }
+  .heat div { aspect-ratio: 1; border-radius: 3px; background: var(--heat0); }
+  .heat div.l1 { background: var(--heat1); } .heat div.l2 { background: var(--heat2); }
+  .heat div.future { background: transparent; }
+  .hist { list-style: none; margin: 0; padding: 0; }
+  .hist li { border-top: 1px solid var(--line); padding: 10px 0; }
+  .hist li:first-child { border-top: 0; padding-top: 0; }
+  .hist .h { display: flex; justify-content: space-between; font-weight: 600; }
+  .hist .h span { color: var(--muted); font-weight: 400; font-size: 13px; }
+  .hist .s { font-size: 13px; color: var(--muted); font-family: "JetBrains Mono", monospace; }
+  .empty { color: var(--muted); font-size: 14px; }
+  .err { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Lift Log</h1>
+    <div class="date" id="date"></div>
+  </header>
+
+  <div class="days" id="days"></div>
+  <section class="card" id="today"><p class="empty">Loading…</p></section>
+
+  <h2>This week</h2>
+  <section class="card stats" id="stats"></section>
+
+  <h2>Progress</h2>
+  <section class="card" id="charts"></section>
+
+  <h2>Last 12 weeks</h2>
+  <section class="card"><div class="heat" id="heat"></div></section>
+
+  <h2>History</h2>
+  <section class="card"><ul class="hist" id="hist"></ul></section>
+</main>
+
+<script>
+const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const parseDate = s => { const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); };
+const fmt = s => parseDate(s).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+
+function parseCSV(text) {
+  const rows = []; let row = [], cell = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"' && text[i+1] === '"') { cell += '"'; i++; } else if (c === '"') q = false; else cell += c; }
+    else if (c === '"') q = true;
+    else if (c === ",") { row.push(cell); cell = ""; }
+    else if (c === "\n" || c === "\r") { if (c === "\r" && text[i+1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+    else cell += c;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  const [head, ...body] = rows.filter(r => r.some(x => x.trim()));
+  return body.map(r => Object.fromEntries(head.map((h, i) => [h.trim(), (r[i] ?? "").trim()])));
+}
+
+async function load() {
+  const bust = `?t=${Date.now()}`;
+  const [lifts, sessions, plan] = await Promise.all([
+    fetch("data/lifts.csv" + bust).then(r => r.text()).then(parseCSV),
+    fetch("data/sessions.csv" + bust).then(r => r.text()).then(parseCSV),
+    fetch("data/plan.json" + bust).then(r => r.json()),
+  ]);
+  lifts.forEach(r => { r.weight = Number(r.weight); r.reps = Number(r.reps); });
+  return { lifts, sessions, plan };
+}
+
+// Top set for an exercise/side on a given date: heaviest weight, best reps at it.
+function topSet(rows) {
+  return rows.reduce((b, r) => (!b || r.weight > b.weight || (r.weight === b.weight && r.reps > b.reps)) ? r : b, null);
+}
+
+function suggestion(lifts, name, side, cfg) {
+  const rows = lifts.filter(r => r.exercise === name && r.side === side);
+  if (!rows.length) return null;
+  const last = rows.map(r => r.date).sort().at(-1);
+  const top = topSet(rows.filter(r => r.date === last));
+  const hit = top.reps >= cfg.targetReps;
+  return { last, top, next: hit ? top.weight + cfg.step : top.weight, hit };
+}
+
+function renderToday(data, dayKey, isToday) {
+  const { plan, lifts } = data, units = plan.units;
+  const day = plan.rotation[dayKey];
+  let html = `<p class="focus">${isToday ? "Today · " : dayKey + " · "}${esc(day.focus)}</p>`;
+  if (day.note) html += `<p class="note">${esc(day.note)}</p>`;
+  if (!day.exercises.length) html += `<p class="note">No machines today.</p>`;
+  for (const name of day.exercises) {
+    const cfg = plan.exercises[name] || { sides: ["both"], targetReps: 5, sets: 2, step: 5 };
+    const u = cfg.unit || units;
+    html += `<div class="ex"><div class="ex-name">${esc(name)}<small>${cfg.sets} × ${cfg.targetReps}${cfg.unit === "s" ? " s" : ""}</small></div><div class="targets">`;
+    for (const side of cfg.sides) {
+      const s = suggestion(lifts, name, side, cfg);
+      const label = side === "both" ? "Target" : side === "L" ? "Left" : "Right";
+      html += s
+        ? `<div class="target"><div class="side">${label}</div><div class="big">${s.next} ${u}</div>
+           <div class="last">Last ${s.top.weight}×${s.top.reps} · ${fmt(s.last)}${s.hit ? " → up " + cfg.step : " → repeat"}</div></div>`
+        : `<div class="target"><div class="side">${label}</div><div class="big">—</div><div class="last">${esc(cfg.start || "No history yet")}</div></div>`;
+    }
+    html += `</div>${cfg.cue ? `<div class="cue">${esc(cfg.cue)}</div>` : ""}</div>`;
+  }
+  document.getElementById("today").innerHTML = html;
+}
+
+function renderDays(data) {
+  const todayKey = DAYS[new Date().getDay()];
+  const order = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  const el = document.getElementById("days");
+  const pick = k => {
+    [...el.children].forEach(b => b.classList.toggle("on", b.dataset.k === k));
+    renderToday(data, k, k === todayKey);
+  };
+  el.innerHTML = order.map(k => `<button data-k="${k}" class="${k === todayKey ? "today" : ""}">${k}</button>`).join("");
+  el.onclick = e => { const k = e.target.dataset?.k; if (k) pick(k); };
+  pick(todayKey);
+}
+
+function weekStart(d) { const x = new Date(d); const off = (x.getDay() + 6) % 7; x.setDate(x.getDate() - off); x.setHours(0,0,0,0); return x; }
+
+function renderStats({ lifts, sessions }) {
+  const ws = weekStart(new Date());
+  const inWeek = s => parseDate(s) >= ws;
+  const days = new Set([...lifts.map(r => r.date), ...sessions.map(s => s.date)].filter(inWeek));
+  const hipDays = new Set(sessions.filter(s => inWeek(s.date) && /hip/i.test(s.focus)).map(s => s.date));
+  const mins = sessions.filter(s => inWeek(s.date)).reduce((a, s) => a + Number(s.minutes || 0), 0);
+  document.getElementById("stats").innerHTML = [
+    [days.size + "/6", "gym days"], [hipDays.size + "/3", "hip days"], [mins, "minutes"]
+  ].map(([v, l]) => `<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
+}
+
+function lineChart(series, unit) {
+  const W = 600, H = 150, P = { l: 36, r: 12, t: 10, b: 22 };
+  const pts = series.flatMap(s => s.points);
+  const dates = [...new Set(pts.map(p => p.date))].sort();
+  const ys = pts.map(p => p.y);
+  let lo = Math.min(...ys), hi = Math.max(...ys);
+  const pad = Math.max(5, (hi - lo) * 0.2); lo = Math.floor((lo - pad) / 5) * 5; hi = Math.ceil((hi + pad) / 5) * 5;
+  const t0 = parseDate(dates[0]).getTime(), t1 = parseDate(dates.at(-1)).getTime();
+  const x = d => dates.length === 1 ? (P.l + W - P.r) / 2 : P.l + (parseDate(d).getTime() - t0) / (t1 - t0) * (W - P.l - P.r);
+  const y = v => P.t + (hi - v) / (hi - lo) * (H - P.t - P.b);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img">`;
+  for (const v of [lo, (lo + hi) / 2, hi]) {
+    svg += `<line x1="${P.l}" x2="${W - P.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${P.l - 6}" y="${y(v) + 4}" text-anchor="end">${Math.round(v)}</text>`;
+  }
+  const ticks = dates.length <= 6 ? dates : [dates[0], dates[Math.floor(dates.length / 2)], dates.at(-1)];
+  ticks.forEach(d => svg += `<text x="${x(d)}" y="${H - 6}" text-anchor="middle">${fmt(d)}</text>`);
+  for (const s of series) {
+    const p = s.points.sort((a, b) => a.date < b.date ? -1 : 1);
+    if (p.length > 1) svg += `<polyline fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linejoin="round" points="${p.map(q => `${x(q.date)},${y(q.y)}`).join(" ")}"/>`;
+    // Left leg drawn as a ring so it stays visible when both legs match.
+    const dot = s.side === "L" ? `r="6.5" fill="none" stroke="${s.color}" stroke-width="2.5"` : `r="4" fill="${s.color}"`;
+    p.forEach(q => svg += `<circle cx="${x(q.date)}" cy="${y(q.y)}" ${dot}><title>${fmt(q.date)}: ${q.y} ${unit} × ${q.reps}</title></circle>`);
+  }
+  return svg + `</svg>`;
+}
+
+function renderCharts({ lifts, plan }) {
+  const names = [...new Set(lifts.map(r => r.exercise))];
+  const colors = { L: "var(--left)", R: "var(--right)", both: "var(--both)" };
+  const labels = { L: "Left", R: "Right", both: "Both" };
+  const el = document.getElementById("charts");
+  if (!names.length) { el.innerHTML = `<p class="empty">No lifts logged yet.</p>`; return; }
+  el.innerHTML = names.map(name => {
+    const rows = lifts.filter(r => r.exercise === name);
+    const sides = [...new Set(rows.map(r => r.side))];
+    const series = sides.map(side => {
+      const byDate = {};
+      rows.filter(r => r.side === side).forEach(r => (byDate[r.date] ||= []).push(r));
+      return { side, color: colors[side] || "var(--accent)",
+        points: Object.entries(byDate).map(([date, rs]) => { const t = topSet(rs); return { date, y: t.weight, reps: t.reps }; }) };
+    });
+    const unit = plan.exercises[name]?.unit || plan.units;
+    const legend = sides.length > 1 ? `<span class="legend">${series.map(s => `<span><i style="background:${s.color}"></i>${labels[s.side] || s.side}</span>`).join("")}</span>` : "";
+    return `<div class="chart"><div class="chart-title">${esc(name)} <small style="font-weight:400;color:var(--muted)">top set, ${unit}</small></div>${legend}${lineChart(series, unit)}</div>`;
+  }).join("");
+}
+
+function renderHeat({ lifts, sessions }) {
+  const dayMins = {};
+  sessions.forEach(s => dayMins[s.date] = (dayMins[s.date] || 0) + Number(s.minutes || 0));
+  lifts.forEach(r => dayMins[r.date] ??= 1);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = weekStart(today); start.setDate(start.getDate() - 7 * 11);
+  let html = "";
+  for (let i = 0; i < 84; i++) {
+    const d = new Date(start); d.setDate(start.getDate() + i);
+    const m = dayMins[iso(d)];
+    const cls = d > today ? "future" : m ? (m >= 7 ? "l2" : "l1") : "";
+    html += `<div class="${cls}" title="${iso(d)}${m ? ` · ${m} min` : ""}"></div>`;
+  }
+  document.getElementById("heat").innerHTML = html;
+}
+
+function renderHistory({ lifts, sessions, plan }) {
+  const dates = [...new Set([...lifts.map(r => r.date), ...sessions.map(s => s.date)])].sort().reverse().slice(0, 15);
+  const el = document.getElementById("hist");
+  if (!dates.length) { el.innerHTML = `<li class="empty">Nothing yet.</li>`; return; }
+  el.innerHTML = dates.map(d => {
+    const s = sessions.find(x => x.date === d);
+    const rows = lifts.filter(r => r.date === d);
+    const byEx = {};
+    rows.forEach(r => (byEx[r.exercise] ||= []).push(r));
+    const lines = Object.entries(byEx).map(([ex, rs]) => {
+      const sides = [...new Set(rs.map(r => r.side))];
+      const sets = sides.length > 1 && sides.every(sd => rs.filter(r => r.side === sd).map(r => r.weight + "×" + r.reps).join() === rs.filter(r => r.side === sides[0]).map(r => r.weight + "×" + r.reps).join())
+        ? rs.filter(r => r.side === sides[0]).map(r => `${r.weight}×${r.reps}`).join(", ") + " (each leg)"
+        : rs.map(r => `${r.side !== "both" ? r.side + " " : ""}${r.weight}×${r.reps}`).join(", ");
+      return `<div class="s">${esc(ex)}: ${sets}</div>`;
+    }).join("");
+    return `<li><div class="h">${fmt(d)} · ${esc(s?.focus || "Lift")}<span>${s?.minutes ? s.minutes + " min" : ""}</span></div>${lines}</li>`;
+  }).join("");
+}
+
+document.getElementById("date").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
+load().then(data => {
+  renderDays(data); renderStats(data); renderCharts(data); renderHeat(data); renderHistory(data);
+}).catch(e => {
+  document.getElementById("today").innerHTML = `<p class="err">Couldn't load data: ${esc(e.message)}</p>`;
+});
+</script>
+</body>
+</html>
