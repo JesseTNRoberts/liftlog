@@ -61,6 +61,10 @@
   .hist .h { display: flex; justify-content: space-between; font-weight: 600; }
   .hist .h span { color: var(--muted); font-weight: 400; font-size: 13px; }
   .hist .s { font-size: 13px; color: var(--muted); font-family: "JetBrains Mono", monospace; }
+  .vol-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .vol-head .v { font: 500 26px "JetBrains Mono", monospace; }
+  .vol-head .l { font-size: 12px; color: var(--muted); }
+  .vol-head .d { font-size: 13px; color: var(--muted); text-align: right; }
   .empty { color: var(--muted); font-size: 14px; }
   .err { color: var(--accent); }
 </style>
@@ -77,6 +81,9 @@
 
   <h2>This week</h2>
   <section class="card stats" id="stats"></section>
+
+  <h2>Daily volume</h2>
+  <section class="card" id="volume"></section>
 
   <h2>Progress</h2>
   <section class="card" id="charts"></section>
@@ -247,10 +254,56 @@ function renderHeat({ lifts, sessions }) {
   document.getElementById("heat").innerHTML = html;
 }
 
+
+const VOL_COLORS = ["#d2581f","#2f6fb3","#3a8a5a","#a3489a","#c4952b","#4f8f9e","#7a6a5a"];
+// Volume = weight x reps for every weighted set. Timed holds (unit "s") don't count.
+function volumeByDay({ lifts, plan }) {
+  const days = {};
+  lifts.filter(r => plan.exercises[r.exercise]?.unit !== "s").forEach(r => {
+    const d = (days[r.date] ||= { total: 0, ex: {} });
+    const v = r.weight * r.reps; d.total += v; d.ex[r.exercise] = (d.ex[r.exercise] || 0) + v;
+  });
+  return days;
+}
+const lb = n => Math.round(n).toLocaleString();
+
+function renderVolume(data) {
+  const days = volumeByDay(data), el = document.getElementById("volume");
+  const dates = Object.keys(days).sort().slice(-20);
+  if (!dates.length) { el.innerHTML = `<p class="empty">No lifts logged yet.</p>`; return; }
+  const last = dates.at(-1), prev = dates.at(-2);
+  const delta = prev ? days[last].total - days[prev].total : null;
+  const exNames = [...new Set(dates.flatMap(d => Object.keys(days[d].ex)))];
+  const color = n => VOL_COLORS[exNames.indexOf(n) % VOL_COLORS.length];
+  const W = 600, H = 170, P = { l: 44, r: 8, t: 10, b: 22 };
+  const max = Math.max(...dates.map(d => days[d].total));
+  const step = Math.pow(10, Math.floor(Math.log10(max))) / 2;
+  const top = Math.ceil(max * 1.1 / step) * step;
+  const slot = (W - P.l - P.r) / Math.max(dates.length, 6);
+  const bw = Math.min(36, slot * 0.7);
+  const y = v => P.t + (1 - v / top) * (H - P.t - P.b);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img">`;
+  for (const v of [0, top / 2, top]) svg += `<line x1="${P.l}" x2="${W-P.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${P.l-6}" y="${y(v)+4}" text-anchor="end">${v >= 1000 ? (v/1000).toFixed(v % 1000 ? 1 : 0) + "k" : v}</text>`;
+  dates.forEach((d, i) => {
+    const cx = P.l + slot * (i + 0.5); let acc = 0;
+    exNames.forEach(n => {
+      const v = days[d].ex[n]; if (!v) return;
+      svg += `<rect x="${cx - bw/2}" y="${y(acc + v)}" width="${bw}" height="${y(acc) - y(acc + v)}" fill="${color(n)}"><title>${fmt(d)} · ${esc(n)}: ${lb(v)} lb</title></rect>`;
+      acc += v;
+    });
+    if (dates.length <= 8 || i % Math.ceil(dates.length / 6) === 0 || i === dates.length - 1) svg += `<text x="${cx}" y="${H-6}" text-anchor="middle">${fmt(d)}</text>`;
+  });
+  svg += `</svg>`;
+  const legend = `<span class="legend">${exNames.map(n => `<span><i style="background:${color(n)}"></i>${esc(n)}</span>`).join("")}</span>`;
+  el.innerHTML = `<div class="vol-head"><div><div class="v">${lb(days[last].total)} lb</div><div class="l">last session · ${fmt(last)}</div></div>
+    <div class="d">${delta === null ? "" : (delta >= 0 ? "+" : "−") + lb(Math.abs(delta)) + " lb vs " + fmt(prev)}</div></div>${legend}${svg}`;
+}
+
 function renderHistory({ lifts, sessions, plan }) {
   const dates = [...new Set([...lifts.map(r => r.date), ...sessions.map(s => s.date)])].sort().reverse().slice(0, 15);
   const el = document.getElementById("hist");
   if (!dates.length) { el.innerHTML = `<li class="empty">Nothing yet.</li>`; return; }
+  const vol = volumeByDay({ lifts, plan });
   el.innerHTML = dates.map(d => {
     const s = sessions.find(x => x.date === d);
     const rows = lifts.filter(r => r.date === d);
@@ -263,13 +316,13 @@ function renderHistory({ lifts, sessions, plan }) {
         : rs.map(r => `${r.side !== "both" ? r.side + " " : ""}${r.weight}×${r.reps}`).join(", ");
       return `<div class="s">${esc(ex)}: ${sets}</div>`;
     }).join("");
-    return `<li><div class="h">${fmt(d)} · ${esc(s?.focus || "Lift")}<span>${s?.minutes ? s.minutes + " min" : ""}</span></div>${lines}</li>`;
+    return `<li><div class="h">${fmt(d)} · ${esc(s?.focus || "Lift")}<span>${[vol[d] ? lb(vol[d].total) + " lb" : "", s?.minutes ? s.minutes + " min" : ""].filter(Boolean).join(" · ")}</span></div>${lines}</li>`;
   }).join("");
 }
 
 document.getElementById("date").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
 load().then(data => {
-  renderDays(data); renderStats(data); renderCharts(data); renderHeat(data); renderHistory(data);
+  renderDays(data); renderStats(data); renderVolume(data); renderCharts(data); renderHeat(data); renderHistory(data);
 }).catch(e => {
   document.getElementById("today").innerHTML = `<p class="err">Couldn't load data: ${esc(e.message)}</p>`;
 });
