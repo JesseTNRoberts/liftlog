@@ -42,7 +42,9 @@ An exercise in `plan.json` can carry `"next": {"weight": 60, "reason": "knee cau
 ## Current notes
 
 - The campus gym has no seated calf raise; Tuesday uses `Calf extension` instead.
-- Oct 27: pulling on the inside of the left knee during hamstring curl at 80 lb (only under load, fine walking). Hamstring curl is held at 60 × 8 until pain-free. Ask about the knee before hamstring curls.
+- Oct 27: pulling on the inside of the left knee during hamstring curl at 80 lb (only under load, fine walking). Hamstring curl is held at 60 × 8 until pain-free. Ask about the knee before hamstring curls. Oct 28: left knee felt fine.
+- Oct 28: right inner knee felt tired during the run (sensation, no pain). Ask about it before leg work.
+- Oct 28: very sore from Monday's hips; Wednesday was mostly recovery. If he's sore on a hip day, do one light set and move on.
 
 ## Plan context
 

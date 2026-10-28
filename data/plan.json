@@ -68,7 +68,11 @@
       "targetReps": 5,
       "sets": 2,
       "step": 5,
-      "cue": "Slow, 1–2 s hold at the widest point"
+      "cue": "Slow, 1–2 s hold at the widest point",
+      "next": {
+        "weight": 170,
+        "reason": "back to Monday's weight after sore day"
+      }
     },
     "Seated calf raise": {
       "sides": [
@@ -100,7 +104,11 @@
       "targetReps": 8,
       "sets": 2,
       "step": 5,
-      "start": "Find a weight for 8 hard reps"
+      "start": "Find a weight for 8 hard reps",
+      "next": {
+        "weight": 100,
+        "reason": "85×10 had 3–4 left"
+      }
     },
     "Seated row": {
       "sides": [
