@@ -139,6 +139,7 @@ function suggestion(lifts, name, side, cfg) {
   const last = rows.map(r => r.date).sort().at(-1);
   const top = topSet(rows.filter(r => r.date === last));
   const hit = top.reps >= cfg.targetReps;
+  if (cfg.next) return { last, top, next: cfg.next.weight, hit, override: cfg.next.reason || "set by coach" };
   return { last, top, next: hit ? top.weight + cfg.step : top.weight, hit };
 }
 
@@ -157,7 +158,7 @@ function renderToday(data, dayKey, isToday) {
       const label = side === "both" ? "Target" : side === "L" ? "Left" : "Right";
       html += s
         ? `<div class="target"><div class="side">${label}</div><div class="big">${s.next} ${u}</div>
-           <div class="last">Last ${s.top.weight}×${s.top.reps} · ${fmt(s.last)}${s.hit ? " → up " + cfg.step : " → repeat"}</div></div>`
+           <div class="last">Last ${s.top.weight}×${s.top.reps} · ${fmt(s.last)}${s.override ? " → " + esc(s.override) : s.hit ? " → up " + cfg.step : " → repeat"}</div></div>`
         : `<div class="target"><div class="side">${label}</div><div class="big">—</div><div class="last">${esc(cfg.start || "No history yet")}</div></div>`;
     }
     html += `</div>${cfg.cue ? `<div class="cue">${esc(cfg.cue)}</div>` : ""}</div>`;
