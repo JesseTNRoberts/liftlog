@@ -27,8 +27,8 @@
       "focus": "Upper body & core",
       "exercises": [
         "Chest press",
-        "Seated row",
-        "Side plank"
+        "Shoulder press",
+        "Pallof press"
       ]
     },
     "Fri": {
@@ -139,6 +139,33 @@
       "sets": 2,
       "step": 10,
       "cue": "Slow, pause at the top. Used in place of seated calf raise (not at campus gym)"
+    },
+    "Shoulder press": {
+      "sides": [
+        "both"
+      ],
+      "targetReps": 8,
+      "sets": 2,
+      "step": 5,
+      "cue": "Machine",
+      "next": {
+        "weight": 80,
+        "reason": "80×8 had 1 left"
+      }
+    },
+    "Pallof press": {
+      "sides": [
+        "L",
+        "R"
+      ],
+      "targetReps": 10,
+      "sets": 2,
+      "step": 5,
+      "cue": "Side = where the machine is. Push straight forward, hold 1 s, don't let it twist you",
+      "next": {
+        "weight": 22,
+        "reason": "machine-on-left side was tough"
+      }
     }
   },
   "baselines": [

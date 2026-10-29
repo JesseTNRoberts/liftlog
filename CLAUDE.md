@@ -43,8 +43,10 @@ An exercise in `plan.json` can carry `"next": {"weight": 60, "reason": "knee cau
 
 - The campus gym has no seated calf raise; Tuesday uses `Calf extension` instead.
 - Oct 27: pulling on the inside of the left knee during hamstring curl at 80 lb (only under load, fine walking). Hamstring curl is held at 60 × 8 until pain-free. Ask about the knee before hamstring curls. Oct 28: left knee felt fine.
-- Oct 28: right inner knee felt tired during the run (sensation, no pain). Ask about it before leg work.
+- Oct 28: right inner knee felt tired during the run (sensation, no pain). Ask about it before leg work. Oct 29: knees and hips felt fine.
 - Oct 28: very sore from Monday's hips; Wednesday was mostly recovery. If he's sore on a hip day, do one light set and move on.
+- Thursday: he dislikes side planks, so use Pallof press (side = the side the machine is on). He does lots of pull-ups, so no seated row; shoulder press instead. Oct 29: Pallof with the machine on his left was much harder than on the right.
+- Don't schedule chest press the day after he's done it.
 
 ## Plan context
 
