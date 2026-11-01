@@ -47,6 +47,8 @@ An exercise in `plan.json` can carry `"next": {"weight": 60, "reason": "knee cau
 - Oct 28: very sore from Monday's hips; Wednesday was mostly recovery. If he's sore on a hip day, do one light set and move on.
 - Thursday: he dislikes side planks, so use Pallof press (side = the side the machine is on). He does lots of pull-ups, so no seated row; shoulder press instead. Oct 29: Pallof with the machine on his left was much harder than on the right.
 - Don't schedule chest press the day after he's done it.
+- Nov 1: left hip flexor much tighter than right (fits the weaker left side on Pallof). Give the left extra stretch time.
+- Mobility: he won't get on the floor, so use standing stretches only. On voice, give one short instruction at a time; he times holds himself.
 
 ## Plan context
 
