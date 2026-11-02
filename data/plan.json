@@ -59,7 +59,14 @@
       "targetReps": 5,
       "sets": 2,
       "step": 10,
-      "cue": "Knee tracks over toes"
+      "cue": "Knee tracks over toes",
+      "next": {
+        "bySide": {
+          "L": 110,
+          "R": 120
+        },
+        "reason": "left needed help at 120"
+      }
     },
     "Hip abduction": {
       "sides": [
@@ -68,11 +75,7 @@
       "targetReps": 5,
       "sets": 2,
       "step": 5,
-      "cue": "Slow, 1–2 s hold at the widest point",
-      "next": {
-        "weight": 170,
-        "reason": "back to Monday's weight after sore day"
-      }
+      "cue": "Slow, 1–2 s hold at the widest point"
     },
     "Seated calf raise": {
       "sides": [
@@ -149,8 +152,8 @@
       "step": 5,
       "cue": "Machine",
       "next": {
-        "weight": 80,
-        "reason": "80×8 had 1 left"
+        "weight": 90,
+        "reason": "82×8 had 4–5 left"
       }
     },
     "Pallof press": {
@@ -163,8 +166,11 @@
       "step": 5,
       "cue": "Side = where the machine is. Push straight forward, hold 1 s, don't let it twist you",
       "next": {
-        "weight": 22,
-        "reason": "machine-on-left side was tough"
+        "bySide": {
+          "L": 22,
+          "R": 27
+        },
+        "reason": "left side still a little harder"
       }
     }
   },

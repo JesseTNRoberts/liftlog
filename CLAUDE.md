@@ -37,7 +37,7 @@ date,focus,minutes,notes
 
 The page suggests the next weight: if the last top set hit `targetReps`, add `step`; otherwise repeat. When Jesse asks "what am I doing today?", answer the same way from these files.
 
-An exercise in `plan.json` can carry `"next": {"weight": 60, "reason": "knee caution"}`, which overrides the suggestion (use it after pain or a deload). Remove `next` once he logs a pain-free session at or above that weight.
+An exercise in `plan.json` can carry `"next": {"weight": 60, "reason": "knee caution"}`, which overrides the suggestion (use it after pain or a deload). For a per-side target use `"next": {"bySide": {"L": 110, "R": 120}, "reason": "..."}`. Remove `next` once he logs a pain-free session at or above that weight.
 
 ## Current notes
 
@@ -48,6 +48,8 @@ An exercise in `plan.json` can carry `"next": {"weight": 60, "reason": "knee cau
 - Thursday: he dislikes side planks, so use Pallof press (side = the side the machine is on). He does lots of pull-ups, so no seated row; shoulder press instead. Oct 29: Pallof with the machine on his left was much harder than on the right.
 - Don't schedule chest press the day after he's done it.
 - Nov 1: left hip flexor much tighter than right (fits the weaker left side on Pallof). Give the left extra stretch time.
+- Nov 2: left leg weaker on single-leg press (needed help on rep 5 at 120; right fine). Left held at 110, right at 120. Left hip flexor and right knee felt fine.
+- **Spare time rule:** if he finishes the planned exercises with time left in his 10 minutes, add another exercise (Pallof press, shoulder press, or whatever wasn't done this week). Don't wrap up early.
 - Mobility: he won't get on the floor, so use standing stretches only. On voice, give one short instruction at a time; he times holds himself.
 
 ## Plan context

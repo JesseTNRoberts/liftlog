@@ -139,7 +139,10 @@ function suggestion(lifts, name, side, cfg) {
   const last = rows.map(r => r.date).sort().at(-1);
   const top = topSet(rows.filter(r => r.date === last));
   const hit = top.reps >= cfg.targetReps;
-  if (cfg.next) return { last, top, next: cfg.next.weight, hit, override: cfg.next.reason || "set by coach" };
+  if (cfg.next) {
+    const w = cfg.next.bySide && cfg.next.bySide[side] != null ? cfg.next.bySide[side] : cfg.next.weight;
+    if (w != null) return { last, top, next: w, hit, override: cfg.next.reason || "set by coach" };
+  }
   return { last, top, next: hit ? top.weight + cfg.step : top.weight, hit };
 }
 
