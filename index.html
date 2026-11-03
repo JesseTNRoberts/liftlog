@@ -84,6 +84,15 @@
   .vol-head .v { font: 500 26px "JetBrains Mono", monospace; }
   .vol-head .l { font-size: 12px; color: var(--muted); }
   .vol-head .d { font-size: 13px; color: var(--muted); text-align: right; }
+  .vol-detail { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 10px; }
+  .vd-title { font-weight: 600; margin-bottom: 6px; }
+  .vd-title span { font-weight: 400; font-size: 12px; color: var(--muted); margin-left: 6px; }
+  .vd-g { padding: 6px 0; }
+  .vd-gh { display: flex; justify-content: space-between; font-weight: 600; font-size: 14px; }
+  .vd-gh i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; }
+  .vd-ex { display: flex; justify-content: space-between; font-size: 14px; padding-left: 16px; margin-top: 2px; }
+  .vd-sets { font: 12px "JetBrains Mono", monospace; color: var(--muted); padding-left: 16px; }
+  .vd-n { font-family: "JetBrains Mono", monospace; color: var(--muted); font-weight: 500; }
   .empty { color: var(--muted); font-size: 14px; }
   .err { color: var(--accent); }
 </style>
@@ -339,26 +348,35 @@ function renderHeat({ lifts, sessions }) {
 }
 
 
-const VOL_COLORS = ["#d2581f","#2f6fb3","#3a8a5a","#a3489a","#c4952b","#4f8f9e","#7a6a5a","#8a9a2b","#c4577a","#5a5fc4"];
+// Muscle groups in a fixed order (legs first), each with its own colour.
+const GROUPS = [
+  ["Quads & glutes", "#d2581f"], ["Hips", "#2f6fb3"], ["Hamstrings", "#a3489a"], ["Calves", "#3a8a5a"],
+  ["Core", "#4f8f9e"], ["Chest", "#c4952b"], ["Shoulders", "#7a6a5a"], ["Back", "#5a5fc4"], ["Other", "#8a8780"],
+];
+const groupOf = (plan, ex) => plan.exercises[ex]?.group || "Other";
+const groupColor = g => (GROUPS.find(x => x[0] === g) || GROUPS.at(-1))[1];
+
 // Volume = weight x reps for every weighted set. Timed holds (unit "s") don't count.
 function volumeByDay({ lifts, plan }) {
   const days = {};
   lifts.filter(r => plan.exercises[r.exercise]?.unit !== "s").forEach(r => {
-    const d = (days[r.date] ||= { total: 0, ex: {} });
-    const v = r.weight * r.reps; d.total += v; d.ex[r.exercise] = (d.ex[r.exercise] || 0) + v;
+    const d = (days[r.date] ||= { total: 0, ex: {}, groups: {} });
+    const v = r.weight * r.reps, g = groupOf(plan, r.exercise);
+    d.total += v; d.ex[r.exercise] = (d.ex[r.exercise] || 0) + v; d.groups[g] = (d.groups[g] || 0) + v;
   });
   return days;
 }
 const lb = n => Math.round(n).toLocaleString();
 
+let volSelected = null;
 function renderVolume(data) {
   const days = volumeByDay(data), el = document.getElementById("volume");
   const dates = Object.keys(days).sort().slice(-20);
   if (!dates.length) { el.innerHTML = `<p class="empty">No lifts logged yet.</p>`; return; }
+  if (!dates.includes(volSelected)) volSelected = dates.at(-1);
   const last = dates.at(-1), prev = dates.at(-2);
   const delta = prev ? days[last].total - days[prev].total : null;
-  const exNames = [...new Set(dates.flatMap(d => Object.keys(days[d].ex)))];
-  const color = n => VOL_COLORS[exNames.indexOf(n) % VOL_COLORS.length];
+  const groups = GROUPS.map(g => g[0]).filter(g => dates.some(d => days[d].groups[g]));
   const W = Math.max(240, Math.floor(el.clientWidth - 32)), H = 160, P = { l: 34, r: 4, t: 10, b: 22 };
   const max = Math.max(...dates.map(d => days[d].total));
   const step = Math.pow(10, Math.floor(Math.log10(max))) / 2;
@@ -368,20 +386,38 @@ function renderVolume(data) {
   const y = v => P.t + (1 - v / top) * (H - P.t - P.b);
   let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img">`;
   for (const v of [0, top / 2, top]) svg += `<line x1="${P.l}" x2="${W-P.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${P.l-6}" y="${y(v)+4}" text-anchor="end">${v >= 1000 ? (v/1000).toFixed(v % 1000 ? 1 : 0) + "k" : v}</text>`;
+  const every = Math.ceil(dates.length / Math.max(2, Math.floor((W - P.l) / 52)));
   dates.forEach((d, i) => {
-    const cx = P.l + slot * (i + 0.5); let acc = 0;
-    exNames.forEach(n => {
-      const v = days[d].ex[n]; if (!v) return;
-      svg += `<rect x="${cx - bw/2}" y="${y(acc + v)}" width="${bw}" height="${y(acc) - y(acc + v)}" fill="${color(n)}"><title>${fmt(d)} · ${esc(n)}: ${lb(v)} lb</title></rect>`;
+    const cx = P.l + slot * (i + 0.5), on = d === volSelected; let acc = 0;
+    svg += `<g class="vbar" data-d="${d}" style="cursor:pointer" opacity="${on ? 1 : .45}">`;
+    svg += `<rect x="${cx - slot/2}" y="${P.t}" width="${slot}" height="${H - P.t - P.b}" fill="transparent"/>`;
+    groups.forEach(g => {
+      const v = days[d].groups[g]; if (!v) return;
+      svg += `<rect x="${cx - bw/2}" y="${y(acc + v)}" width="${bw}" height="${y(acc) - y(acc + v)}" fill="${groupColor(g)}"><title>${fmt(d)} · ${esc(g)}: ${lb(v)} lb</title></rect>`;
       acc += v;
     });
-    const every = Math.ceil(dates.length / Math.max(2, Math.floor((W - P.l) / 52)));
-    if (i % every === 0 || i === dates.length - 1) svg += `<text x="${cx}" y="${H-6}" text-anchor="middle">${fmt(d)}</text>`;
+    svg += `</g>`;
+    if (on) svg += `<rect x="${cx - bw/2 - 3}" y="${y(acc) - 3}" width="${bw + 6}" height="${y(0) - y(acc) + 3}" fill="none" stroke="var(--ink)" stroke-width="1.5" rx="3" pointer-events="none"/>`;
+    if (i % every === 0 || i === dates.length - 1 || on) svg += `<text x="${cx}" y="${H-6}" text-anchor="middle"${on ? ' style="fill:var(--ink);font-weight:600"' : ""}>${fmt(d)}</text>`;
   });
   svg += `</svg>`;
-  const legend = `<span class="legend">${exNames.map(n => `<span><i style="background:${color(n)}"></i>${esc(n)}</span>`).join("")}</span>`;
+  const legend = `<span class="legend">${groups.map(g => `<span><i style="background:${groupColor(g)}"></i>${esc(g)}</span>`).join("")}</span>`;
+
+  // Detail for the selected day: muscle groups, then the exercises in each.
+  const sd = days[volSelected];
+  const rows = data.lifts.filter(r => r.date === volSelected);
+  const detail = GROUPS.map(g => g[0]).filter(g => sd.groups[g]).map(g => {
+    const exs = Object.keys(sd.ex).filter(ex => groupOf(data.plan, ex) === g).map(ex => {
+      const sets = rows.filter(r => r.exercise === ex).map(r => `${r.side !== "both" ? r.side + " " : ""}${r.weight}×${r.reps}`).join(", ");
+      return `<div class="vd-ex"><span>${esc(ex)}</span><span class="vd-n">${lb(sd.ex[ex])}</span></div><div class="vd-sets">${sets}</div>`;
+    }).join("");
+    return `<div class="vd-g"><div class="vd-gh"><span><i style="background:${groupColor(g)}"></i>${esc(g)}</span><span class="vd-n">${lb(sd.groups[g])} lb</span></div>${exs}</div>`;
+  }).join("");
+
   el.innerHTML = `<div class="vol-head"><div><div class="v">${lb(days[last].total)} lb</div><div class="l">last session · ${fmt(last)}</div></div>
-    <div class="d">${delta === null ? "" : (delta >= 0 ? "+" : "−") + lb(Math.abs(delta)) + " lb vs " + fmt(prev)}</div></div>${legend}${svg}`;
+    <div class="d">${delta === null ? "" : (delta >= 0 ? "+" : "−") + lb(Math.abs(delta)) + " lb vs " + fmt(prev)}</div></div>${legend}${svg}
+    <div class="vol-detail"><div class="vd-title">${fmt(volSelected)} · ${lb(sd.total)} lb <span>tap a bar to see another day</span></div>${detail}</div>`;
+  el.querySelectorAll(".vbar").forEach(b => b.addEventListener("click", () => { volSelected = b.dataset.d; renderVolume(data); }));
 }
 
 function renderHistory({ lifts, sessions, plan }) {

@@ -66,7 +66,8 @@
           "R": 120
         },
         "reason": "left needed help at 120"
-      }
+      },
+      "group": "Quads & glutes"
     },
     "Hip abduction": {
       "sides": [
@@ -75,7 +76,8 @@
       "targetReps": 5,
       "sets": 2,
       "step": 5,
-      "cue": "Slow, 1–2 s hold at the widest point"
+      "cue": "Slow, 1–2 s hold at the widest point",
+      "group": "Hips"
     },
     "Seated calf raise": {
       "sides": [
@@ -84,7 +86,8 @@
       "targetReps": 8,
       "sets": 2,
       "step": 10,
-      "start": "Find a weight for 8 hard reps"
+      "start": "Find a weight for 8 hard reps",
+      "group": "Calves"
     },
     "Hamstring curl": {
       "sides": [
@@ -94,7 +97,8 @@
       "sets": 2,
       "step": 5,
       "start": "Find a weight for 8 hard reps",
-      "cue": "Seated machine (now using lying curl on Tuesdays)"
+      "cue": "Seated machine (now using lying curl on Tuesdays)",
+      "group": "Hamstrings"
     },
     "Chest press": {
       "sides": [
@@ -104,7 +108,8 @@
       "sets": 2,
       "step": 5,
       "start": "Find a weight for 8 hard reps",
-      "cue": "Vertical, plate-loaded; weight includes the machine's base"
+      "cue": "Vertical, plate-loaded; weight includes the machine's base",
+      "group": "Chest"
     },
     "Seated row": {
       "sides": [
@@ -114,7 +119,8 @@
       "sets": 2,
       "step": 5,
       "start": "Find a weight for 8 hard reps",
-      "cue": "Supports the back"
+      "cue": "Supports the back",
+      "group": "Back"
     },
     "Side plank": {
       "sides": [
@@ -125,7 +131,8 @@
       "unit": "s",
       "sets": 2,
       "step": 10,
-      "start": "30 s each side"
+      "start": "30 s each side",
+      "group": "Core"
     },
     "Calf extension": {
       "sides": [
@@ -134,7 +141,8 @@
       "targetReps": 5,
       "sets": 2,
       "step": 10,
-      "cue": "Slow, pause at the top. Used in place of seated calf raise (not at campus gym)"
+      "cue": "Slow, pause at the top. Used in place of seated calf raise (not at campus gym)",
+      "group": "Calves"
     },
     "Shoulder press": {
       "sides": [
@@ -143,7 +151,8 @@
       "targetReps": 8,
       "sets": 2,
       "step": 5,
-      "cue": "Plate-loaded; weight includes the 12 lb base, so jumps are uneven (2 plates = 102)"
+      "cue": "Plate-loaded; weight includes the 12 lb base, so jumps are uneven (2 plates = 102)",
+      "group": "Shoulders"
     },
     "Pallof press": {
       "sides": [
@@ -160,7 +169,8 @@
           "R": 27
         },
         "reason": "left side still a little harder"
-      }
+      },
+      "group": "Core"
     },
     "Lying hamstring curl": {
       "sides": [
@@ -169,7 +179,8 @@
       "targetReps": 8,
       "sets": 2,
       "step": 5,
-      "cue": "Prone machine. Watch the left knee"
+      "cue": "Prone machine. Watch the left knee",
+      "group": "Hamstrings"
     }
   },
   "baselines": [

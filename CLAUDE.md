@@ -20,7 +20,7 @@ date,exercise,side,set,weight,reps,notes
 ```
 
 - `date`: YYYY-MM-DD, in Jesse's local time (US Eastern).
-- `exercise`: use the exact names in `data/plan.json` → `exercises` so the "today" card can find the history. Add a new entry to `plan.json` when he does something new.
+- `exercise`: use the exact names in `data/plan.json` → `exercises` so the "today" card can find the history. Add a new entry to `plan.json` when he does something new, with a `group` (one of `Quads & glutes`, `Hips`, `Hamstrings`, `Calves`, `Core`, `Chest`, `Shoulders`, `Back`) so the volume chart can colour it.
 - `side`: `L`, `R` or `both`. "Each leg" means two rows per set, one `L` and one `R`.
 - `weight`: pounds, number only. For side plank, `weight` is seconds held and `reps` is 1.
 - Quote `notes` if it contains a comma.
