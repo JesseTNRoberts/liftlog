@@ -42,14 +42,16 @@ An exercise in `plan.json` can carry `"next": {"weight": 60, "reason": "knee cau
 ## Current notes
 
 - The campus gym has no seated calf raise; Tuesday uses `Calf extension` instead.
-- Oct 27: pulling on the inside of the left knee during hamstring curl at 80 lb (only under load, fine walking). Hamstring curl is held at 60 × 8 until pain-free. Ask about the knee before hamstring curls. Oct 28: left knee felt fine.
+- Oct 27: pulling on the inside of the left knee during hamstring curl at 80 lb (only under load, fine walking). Nov 3: resolved, lying hamstring curl at 80 × 8 with no pull. Still worth a quick check before hamstring work.
 - Oct 28: right inner knee felt tired during the run (sensation, no pain). Ask about it before leg work. Oct 29: knees and hips felt fine.
 - Oct 28: very sore from Monday's hips; Wednesday was mostly recovery. If he's sore on a hip day, do one light set and move on.
 - Thursday: he dislikes side planks, so use Pallof press (side = the side the machine is on). He does lots of pull-ups, so no seated row; shoulder press instead. Oct 29: Pallof with the machine on his left was much harder than on the right.
 - Don't schedule chest press the day after he's done it.
 - Nov 1: left hip flexor much tighter than right (fits the weaker left side on Pallof). Give the left extra stretch time.
 - Nov 2: left leg weaker on single-leg press (needed help on rep 5 at 120; right fine). Left held at 110, right at 120. Left hip flexor and right knee felt fine.
-- **Spare time rule:** if he finishes the planned exercises with time left in his 10 minutes, add another exercise (Pallof press, shoulder press, or whatever wasn't done this week). Don't wrap up early.
+- **Spare time rule:** legs are guaranteed every session; upper body gets worked in whenever there's time left. If he finishes the planned exercises early, add upper body (chest press, shoulder press) rather than more core. Don't wrap up early.
+- Chest press (vertical) and shoulder press are plate-loaded machines. Logged weights include the base (shoulder press base 12 lb, so 2 plates = 102). Suggest weights he can actually load.
+- Tuesday hamstrings now on the lying (prone) curl; Nov 3 the right leg pulled harder than the left.
 - Mobility: he won't get on the floor, so use standing stretches only. On voice, give one short instruction at a time; he times holds himself.
 
 ## Plan context

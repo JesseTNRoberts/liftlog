@@ -13,7 +13,7 @@
       "focus": "Calves & hamstrings",
       "exercises": [
         "Calf extension",
-        "Hamstring curl"
+        "Lying hamstring curl"
       ]
     },
     "Wed": {
@@ -94,11 +94,7 @@
       "sets": 2,
       "step": 5,
       "start": "Find a weight for 8 hard reps",
-      "cue": "Seated. Left inner knee pulled at 80 on Oct 27: stay light, go up only if the knee feels fine",
-      "next": {
-        "weight": 60,
-        "reason": "knee caution"
-      }
+      "cue": "Seated machine (now using lying curl on Tuesdays)"
     },
     "Chest press": {
       "sides": [
@@ -108,10 +104,7 @@
       "sets": 2,
       "step": 5,
       "start": "Find a weight for 8 hard reps",
-      "next": {
-        "weight": 100,
-        "reason": "85×10 had 3–4 left"
-      }
+      "cue": "Vertical, plate-loaded; weight includes the machine's base"
     },
     "Seated row": {
       "sides": [
@@ -150,11 +143,7 @@
       "targetReps": 8,
       "sets": 2,
       "step": 5,
-      "cue": "Machine",
-      "next": {
-        "weight": 90,
-        "reason": "82×8 had 4–5 left"
-      }
+      "cue": "Plate-loaded; weight includes the 12 lb base, so jumps are uneven (2 plates = 102)"
     },
     "Pallof press": {
       "sides": [
@@ -172,6 +161,15 @@
         },
         "reason": "left side still a little harder"
       }
+    },
+    "Lying hamstring curl": {
+      "sides": [
+        "both"
+      ],
+      "targetReps": 8,
+      "sets": 2,
+      "step": 5,
+      "cue": "Prone machine. Watch the left knee"
     }
   },
   "baselines": [
