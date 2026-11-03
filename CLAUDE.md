@@ -8,6 +8,7 @@ Jesse's strength log. A static page (`index.html`) on GitHub Pages reads three d
 - **Load the log at the start of every workout.** When Jesse says he's at the gym (or starts a workout), clone/pull this repo first and read `data/plan.json`, `data/lifts.csv` and `data/sessions.csv`. Ask how he's feeling since last session, naming anything in "Current notes" (like the knee). Then tell him today's focus and the target weight for each exercise, worked out the same way the page does (see "Today's target") and adjusted for his answer.
 - If the repo can't be reached, say so straight away. Don't fall back to a local log.
 - He's usually talking on voice mid-run: keep replies to a sentence or two.
+- **10-minute clock.** When he says he's at the gym, note the start time (call the current-time tool if you have one). Before suggesting each next exercise, check the elapsed time: under ~8 minutes, keep going (spare time rule); at 9–10, wrap up. Log the elapsed minutes in `sessions.csv`. If you have no clock (some voice calls), ask him for the time on his watch at the start and when he finishes a set.
 
 ## Logging a session
 
