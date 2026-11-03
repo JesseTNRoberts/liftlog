@@ -11,12 +11,14 @@
     --bg: #f6f5f1; --card: #ffffff; --ink: #1d1d1b; --muted: #6d6b65; --line: #e4e2db;
     --accent: #d2581f; --accent-soft: #fbe7dc; --left: #2f6fb3; --right: #d2581f; --both: #3a8a5a;
     --heat0: #ebe9e2; --heat1: #9fd1b0; --heat2: #3a8a5a;
+    --good: #2e7a4c; --good-soft: #dff1e5;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --bg: #141413; --card: #1f1f1d; --ink: #f1efe8; --muted: #9c9a92; --line: #33322f;
       --accent: #f07a3f; --accent-soft: #3a2519; --left: #6ea6e6; --right: #f07a3f; --both: #63bb85;
       --heat0: #2a2a27; --heat1: #2f5c40; --heat2: #63bb85;
+      --good: #7fd09f; --good-soft: #1f3a29;
     }
   }
   * { box-sizing: border-box; }
@@ -46,12 +48,29 @@
   .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .stat .v { font: 500 24px "JetBrains Mono", monospace; }
   .stat .l { font-size: 12px; color: var(--muted); }
-  .chart { margin-bottom: 12px; }
-  .chart-title { font-weight: 600; margin-bottom: 4px; display: flex; justify-content: space-between; }
-  .legend { font-size: 12px; color: var(--muted); display: flex; gap: 12px; }
-  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+  .charts { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .chart { padding: 14px 14px 8px; min-width: 0; }
+  .chart-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .chart-name { font-weight: 600; }
+  .chart-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .chart-now { text-align: right; white-space: nowrap; }
+  .chart-now .v { font: 500 20px "JetBrains Mono", monospace; line-height: 1.2; }
+  .chart-now .v small { font-size: 12px; color: var(--muted); font-family: Inter, sans-serif; }
+  .chart-now .side-v { font: 500 15px "JetBrains Mono", monospace; line-height: 1.35; }
+  .chart-now .side-v b { font: 600 11px Inter, sans-serif; letter-spacing: .05em; margin-right: 4px; }
+  .delta { display: inline-block; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 1px 8px; margin-top: 4px; }
+  .delta.up { background: var(--good-soft); color: var(--good); }
+  .delta.flat, .delta.down { background: var(--heat0); color: var(--muted); }
+  .chart-plot { margin-top: 6px; }
+  .chart-first { font-size: 13px; color: var(--muted); padding: 10px 0 8px; }
+  .legend { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 4px 0 8px; }
+  .legend > span { white-space: nowrap; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  svg { display: block; overflow: visible; }
   svg text { fill: var(--muted); font: 11px Inter, sans-serif; }
-  .heat { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 1fr); gap: 3px; }
+  svg text.pt { font: 500 11px "JetBrains Mono", monospace; }
+  svg text.pt.last { fill: var(--ink); font-weight: 600; font-size: 12px; }
+  .heat { display: grid; grid-auto-flow: column; grid-template-columns: repeat(12, 1fr); grid-template-rows: repeat(7, auto); gap: 3px; }
   .heat div { aspect-ratio: 1; border-radius: 3px; background: var(--heat0); }
   .heat div.l1 { background: var(--heat1); } .heat div.l2 { background: var(--heat2); }
   .heat div.future { background: transparent; }
@@ -86,7 +105,7 @@
   <section class="card" id="volume"></section>
 
   <h2>Progress</h2>
-  <section class="card" id="charts"></section>
+  <section class="charts" id="charts"></section>
 
   <h2>Last 12 weeks</h2>
   <section class="card"><div class="heat" id="heat"></div></section>
@@ -195,52 +214,113 @@ function renderStats({ lifts, sessions }) {
   ].map(([v, l]) => `<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
 }
 
-function lineChart(series, unit) {
-  const W = 600, H = 150, P = { l: 36, r: 12, t: 10, b: 22 };
+// Charts are drawn at the container's real pixel width so text stays readable on a phone.
+function niceDomain(ys) {
+  let lo = Math.min(...ys), hi = Math.max(...ys);
+  const pad = Math.max(8, (hi - lo) * 0.25);
+  return [Math.max(0, lo - pad), hi + pad];
+}
+
+function lineChart(series, unit, W) {
+  const H = 120, P = { l: 6, r: 6, t: 20, b: 22 };
   const pts = series.flatMap(s => s.points);
   const dates = [...new Set(pts.map(p => p.date))].sort();
-  const ys = pts.map(p => p.y);
-  let lo = Math.min(...ys), hi = Math.max(...ys);
-  const pad = Math.max(5, (hi - lo) * 0.2); lo = Math.floor((lo - pad) / 5) * 5; hi = Math.ceil((hi + pad) / 5) * 5;
+  const [lo, hi] = niceDomain(pts.map(p => p.y));
   const t0 = parseDate(dates[0]).getTime(), t1 = parseDate(dates.at(-1)).getTime();
-  const x = d => dates.length === 1 ? (P.l + W - P.r) / 2 : P.l + (parseDate(d).getTime() - t0) / (t1 - t0) * (W - P.l - P.r);
+  const padX = 22;
+  const x = d => t1 === t0 ? W / 2 : P.l + padX + (parseDate(d).getTime() - t0) / (t1 - t0) * (W - P.l - P.r - 2 * padX);
   const y = v => P.t + (hi - v) / (hi - lo) * (H - P.t - P.b);
-  let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img">`;
-  for (const v of [lo, (lo + hi) / 2, hi]) {
-    svg += `<line x1="${P.l}" x2="${W - P.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${P.l - 6}" y="${y(v) + 4}" text-anchor="end">${Math.round(v)}</text>`;
-  }
-  const ticks = dates.length <= 6 ? dates : [dates[0], dates[Math.floor(dates.length / 2)], dates.at(-1)];
-  ticks.forEach(d => svg += `<text x="${x(d)}" y="${H - 6}" text-anchor="middle">${fmt(d)}</text>`);
-  for (const s of series) {
-    const p = s.points.sort((a, b) => a.date < b.date ? -1 : 1);
-    if (p.length > 1) svg += `<polyline fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linejoin="round" points="${p.map(q => `${x(q.date)},${y(q.y)}`).join(" ")}"/>`;
-    // Left leg drawn as a ring so it stays visible when both legs match.
-    const dot = s.side === "L" ? `r="6.5" fill="none" stroke="${s.color}" stroke-width="2.5"` : `r="4" fill="${s.color}"`;
-    p.forEach(q => svg += `<circle cx="${x(q.date)}" cy="${y(q.y)}" ${dot}><title>${fmt(q.date)}: ${q.y} ${unit} × ${q.reps}</title></circle>`);
-  }
+  const multi = series.length > 1;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img">`;
+  svg += `<line x1="0" x2="${W}" y1="${H - P.b}" y2="${H - P.b}" stroke="var(--line)"/>`;
+  const ticks = dates.length <= 4 ? dates : [dates[0], dates.at(-1)];
+  ticks.forEach((d, i) => {
+    const anchor = ticks.length > 1 && i === 0 ? "start" : ticks.length > 1 && i === ticks.length - 1 ? "end" : "middle";
+    const tx = anchor === "start" ? Math.max(0, x(d) - 14) : anchor === "end" ? Math.min(W, x(d) + 14) : x(d);
+    svg += `<text x="${tx}" y="${H - 6}" text-anchor="${dates.length <= 4 ? "middle" : anchor}">${fmt(d)}</text>`;
+  });
+  series.forEach((s, si) => {
+    const p = [...s.points].sort((a, b) => a.date < b.date ? -1 : 1);
+    const line = p.map(q => `${x(q.date)},${y(q.y)}`).join(" ");
+    if (!multi && p.length > 1) {
+      const gid = "g" + Math.random().toString(36).slice(2, 8);
+      svg += `<defs><linearGradient id="${gid}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${s.color}" stop-opacity=".22"/><stop offset="1" stop-color="${s.color}" stop-opacity="0"/></linearGradient></defs>`;
+      svg += `<polygon fill="url(#${gid})" points="${x(p[0].date)},${H - P.b} ${line} ${x(p.at(-1).date)},${H - P.b}"/>`;
+    }
+    const sw = multi ? (s.side === "L" ? 6 : 2.5) : 2.5;
+    if (p.length > 1) svg += `<polyline fill="none" stroke="${s.color}" stroke-width="${sw}" stroke-opacity="${multi && s.side === "L" ? .55 : 1}" stroke-linejoin="round" stroke-linecap="round" points="${line}"/>`;
+    p.forEach((q, i) => {
+      const isLast = i === p.length - 1;
+      const r = (isLast ? 5 : 3.5) + (multi && s.side === "L" ? 2.5 : 0);
+      svg += `<circle cx="${x(q.date)}" cy="${y(q.y)}" r="${r}" fill="${isLast ? s.color : "var(--card)"}" stroke="${s.color}" stroke-width="2"><title>${fmt(q.date)}: ${q.y} ${unit} × ${q.reps}</title></circle>`;
+      // Single series: label every point. Two sides: label only where they differ, above for the higher one.
+      const other = multi ? series[1 - si].points.find(o => o.date === q.date) : null;
+      if (multi && other && other.y === q.y && si === 1) return;
+      const below = multi && other && q.y < other.y;
+      svg += `<text class="pt${isLast ? " last" : ""}" x="${x(q.date)}" y="${below ? y(q.y) + 17 : y(q.y) - 9}" text-anchor="middle">${q.y}</text>`;
+    });
+  });
   return svg + `</svg>`;
 }
 
-function renderCharts({ lifts, plan }) {
-  const names = [...new Set(lifts.map(r => r.exercise))];
-  const colors = { L: "var(--left)", R: "var(--right)", both: "var(--both)" };
-  const labels = { L: "Left", R: "Right", both: "Both" };
-  const el = document.getElementById("charts");
-  if (!names.length) { el.innerHTML = `<p class="empty">No lifts logged yet.</p>`; return; }
-  el.innerHTML = names.map(name => {
-    const rows = lifts.filter(r => r.exercise === name);
-    const sides = [...new Set(rows.map(r => r.side))];
-    const series = sides.map(side => {
-      const byDate = {};
-      rows.filter(r => r.side === side).forEach(r => (byDate[r.date] ||= []).push(r));
-      return { side, color: colors[side] || "var(--accent)",
-        points: Object.entries(byDate).map(([date, rs]) => { const t = topSet(rs); return { date, y: t.weight, reps: t.reps }; }) };
-    });
-    const unit = plan.exercises[name]?.unit || plan.units;
-    const legend = sides.length > 1 ? `<span class="legend">${series.map(s => `<span><i style="background:${s.color}"></i>${labels[s.side] || s.side}</span>`).join("")}</span>` : "";
-    return `<div class="chart"><div class="chart-title">${esc(name)} <small style="font-weight:400;color:var(--muted)">top set, ${unit}</small></div>${legend}${lineChart(series, unit)}</div>`;
-  }).join("");
+const SIDE_COLORS = { L: "var(--left)", R: "var(--right)", both: "var(--both)" };
+const SIDE_LABELS = { L: "Left", R: "Right", both: "Both" };
+
+function exerciseSeries(lifts, name) {
+  const rows = lifts.filter(r => r.exercise === name);
+  const sides = ["L", "R", "both"].filter(sd => rows.some(r => r.side === sd));
+  return sides.map(side => {
+    const byDate = {};
+    rows.filter(r => r.side === side).forEach(r => (byDate[r.date] ||= []).push(r));
+    const points = Object.entries(byDate).map(([date, rs]) => { const t = topSet(rs); return { date, y: t.weight, reps: t.reps }; })
+      .sort((a, b) => a.date < b.date ? -1 : 1);
+    return { side, color: SIDE_COLORS[side] || "var(--accent)", points };
+  });
 }
+
+function renderCharts({ lifts, plan }) {
+  const el = document.getElementById("charts");
+  // Plan order first (priority lifts at the top), then anything else that was logged.
+  const logged = new Set(lifts.map(r => r.exercise));
+  const names = [...Object.keys(plan.exercises).filter(n => logged.has(n)), ...[...logged].filter(n => !plan.exercises[n])];
+  if (!names.length) { el.innerHTML = `<div class="card empty">No lifts logged yet.</div>`; return; }
+  el.innerHTML = names.map((name, i) => {
+    const series = exerciseSeries(lifts, name);
+    const unit = plan.exercises[name]?.unit || plan.units;
+    const allDates = [...new Set(series.flatMap(s => s.points.map(p => p.date)))].sort();
+    const lastOf = s => s.points.at(-1);
+    let now;
+    if (series.length > 1) {
+      now = series.map(s => `<div class="side-v" style="color:${s.color}"><b>${s.side}</b>${lastOf(s).y}<small style="color:var(--muted);font:12px Inter"> ×${lastOf(s).reps}</small></div>`).join("");
+    } else {
+      const l = lastOf(series[0]);
+      now = `<div class="v">${l.y}<small> ${unit} × ${l.reps}</small></div>`;
+    }
+    // Change since the first session, using the stronger side.
+    const firstBest = Math.max(...series.map(s => s.points[0].y));
+    const lastBest = Math.max(...series.map(s => lastOf(s).y));
+    const d = lastBest - firstBest;
+    const delta = allDates.length < 2 ? "" :
+      `<span class="delta ${d > 0 ? "up" : d < 0 ? "down" : "flat"}">${d > 0 ? "+" : d < 0 ? "−" : "±"}${Math.abs(d)} ${unit} since ${fmt(allDates[0])}</span>`;
+    const sub = `${allDates.length} session${allDates.length === 1 ? "" : "s"} · top set`;
+    const plot = allDates.length < 2
+      ? `<div class="chart-first">First session ${fmt(allDates[0])}. The line starts next time.</div>`
+      : `<div class="chart-plot" data-i="${i}"></div>`;
+    return `<div class="card chart"><div class="chart-head"><div><div class="chart-name">${esc(name)}</div><div class="chart-sub">${sub}</div>${delta}</div><div class="chart-now">${now}</div></div>${plot}</div>`;
+  }).join("");
+  const draw = () => el.querySelectorAll(".chart-plot").forEach(div => {
+    const name = names[+div.dataset.i];
+    const W = Math.floor(div.clientWidth);
+    if (W > 0) div.innerHTML = lineChart(exerciseSeries(lifts, name), plan.exercises[name]?.unit || plan.units, W);
+  });
+  draw();
+  onResize(draw);
+}
+
+const resizeFns = [];
+function onResize(fn) { resizeFns.push(fn); }
+let lastW = window.innerWidth;
+window.addEventListener("resize", () => { if (window.innerWidth !== lastW) { lastW = window.innerWidth; resizeFns.forEach(f => f()); } });
 
 function renderHeat({ lifts, sessions }) {
   const dayMins = {};
@@ -259,7 +339,7 @@ function renderHeat({ lifts, sessions }) {
 }
 
 
-const VOL_COLORS = ["#d2581f","#2f6fb3","#3a8a5a","#a3489a","#c4952b","#4f8f9e","#7a6a5a"];
+const VOL_COLORS = ["#d2581f","#2f6fb3","#3a8a5a","#a3489a","#c4952b","#4f8f9e","#7a6a5a","#8a9a2b","#c4577a","#5a5fc4"];
 // Volume = weight x reps for every weighted set. Timed holds (unit "s") don't count.
 function volumeByDay({ lifts, plan }) {
   const days = {};
@@ -279,14 +359,14 @@ function renderVolume(data) {
   const delta = prev ? days[last].total - days[prev].total : null;
   const exNames = [...new Set(dates.flatMap(d => Object.keys(days[d].ex)))];
   const color = n => VOL_COLORS[exNames.indexOf(n) % VOL_COLORS.length];
-  const W = 600, H = 170, P = { l: 44, r: 8, t: 10, b: 22 };
+  const W = Math.max(240, Math.floor(el.clientWidth - 32)), H = 160, P = { l: 34, r: 4, t: 10, b: 22 };
   const max = Math.max(...dates.map(d => days[d].total));
   const step = Math.pow(10, Math.floor(Math.log10(max))) / 2;
   const top = Math.ceil(max * 1.1 / step) * step;
   const slot = (W - P.l - P.r) / Math.max(dates.length, 6);
   const bw = Math.min(36, slot * 0.7);
   const y = v => P.t + (1 - v / top) * (H - P.t - P.b);
-  let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img">`;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img">`;
   for (const v of [0, top / 2, top]) svg += `<line x1="${P.l}" x2="${W-P.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${P.l-6}" y="${y(v)+4}" text-anchor="end">${v >= 1000 ? (v/1000).toFixed(v % 1000 ? 1 : 0) + "k" : v}</text>`;
   dates.forEach((d, i) => {
     const cx = P.l + slot * (i + 0.5); let acc = 0;
@@ -295,7 +375,8 @@ function renderVolume(data) {
       svg += `<rect x="${cx - bw/2}" y="${y(acc + v)}" width="${bw}" height="${y(acc) - y(acc + v)}" fill="${color(n)}"><title>${fmt(d)} · ${esc(n)}: ${lb(v)} lb</title></rect>`;
       acc += v;
     });
-    if (dates.length <= 8 || i % Math.ceil(dates.length / 6) === 0 || i === dates.length - 1) svg += `<text x="${cx}" y="${H-6}" text-anchor="middle">${fmt(d)}</text>`;
+    const every = Math.ceil(dates.length / Math.max(2, Math.floor((W - P.l) / 52)));
+    if (i % every === 0 || i === dates.length - 1) svg += `<text x="${cx}" y="${H-6}" text-anchor="middle">${fmt(d)}</text>`;
   });
   svg += `</svg>`;
   const legend = `<span class="legend">${exNames.map(n => `<span><i style="background:${color(n)}"></i>${esc(n)}</span>`).join("")}</span>`;
@@ -326,7 +407,7 @@ function renderHistory({ lifts, sessions, plan }) {
 
 document.getElementById("date").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
 load().then(data => {
-  renderDays(data); renderStats(data); renderVolume(data); renderCharts(data); renderHeat(data); renderHistory(data);
+  renderDays(data); renderStats(data); renderVolume(data); onResize(() => renderVolume(data)); renderCharts(data); renderHeat(data); renderHistory(data);
 }).catch(e => {
   document.getElementById("today").innerHTML = `<p class="err">Couldn't load data: ${esc(e.message)}</p>`;
 });
