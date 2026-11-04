@@ -194,5 +194,14 @@
       "exercise": "Hip abduction",
       "sets": "145×7, 160×5, 175×5"
     }
-  ]
+  ],
+  "bodyweightLb": 160,
+  "calories": {
+    "note": "Estimate = MET × body weight (kg) × hours. Missing minutes count as 10.",
+    "met": {
+      "default": 5.0,
+      "Mobility": 2.3
+    },
+    "defaultMinutes": 10
+  }
 }

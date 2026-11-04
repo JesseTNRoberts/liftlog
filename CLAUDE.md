@@ -55,6 +55,8 @@ An exercise in `plan.json` can carry `"next": {"weight": 60, "reason": "knee cau
 - Tuesday hamstrings now on the lying (prone) curl; Nov 3 the right leg pulled harder than the left.
 - Mobility: he won't get on the floor, so use standing stretches only. On voice, give one short instruction at a time; he times holds himself.
 
+- Calories on the page are a rough estimate: MET (5 for lifting, 2.3 for mobility) × body weight × minutes, from `plan.json` → `bodyweightLb` and `calories`. Missing minutes count as 10. Update `bodyweightLb` if he gives a new weight (Nov 3: 160 lb).
+
 ## Plan context
 
 - 10-minute sessions in the middle of his morning run at the campus gym.

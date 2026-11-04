@@ -45,7 +45,8 @@
   .target .big { font: 500 22px "JetBrains Mono", monospace; }
   .target .last { font-size: 12px; color: var(--muted); }
   .cue { font-size: 13px; color: var(--muted); margin-top: 8px; }
-  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  @media (max-width: 360px) { .stats { grid-template-columns: repeat(2, 1fr); } }
   .stat .v { font: 500 24px "JetBrains Mono", monospace; }
   .stat .l { font-size: 12px; color: var(--muted); }
   .charts { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
@@ -212,14 +213,32 @@ function renderDays(data) {
 
 function weekStart(d) { const x = new Date(d); const off = (x.getDay() + 6) % 7; x.setDate(x.getDate() - off); x.setHours(0,0,0,0); return x; }
 
-function renderStats({ lifts, sessions }) {
+// Rough calorie estimate per gym day: MET × body weight (kg) × hours. Missing minutes count as the default.
+function caloriesByDay({ lifts, sessions, plan }) {
+  const cfg = plan.calories, kg = (plan.bodyweightLb || 0) * 0.4536, out = {};
+  if (!cfg || !kg) return out;
+  const dates = new Set([...lifts.map(r => r.date), ...sessions.map(s => s.date)]);
+  dates.forEach(d => {
+    const ss = sessions.filter(s => s.date === d);
+    const focus = ss[0]?.focus || "";
+    const known = ss.some(s => Number(s.minutes));
+    const mins = known ? ss.reduce((a, s) => a + Number(s.minutes || 0), 0) : cfg.defaultMinutes;
+    const met = cfg.met[focus] ?? cfg.met.default;
+    out[d] = { kcal: met * kg * mins / 60, estimatedTime: !known };
+  });
+  return out;
+}
+
+function renderStats({ lifts, sessions, plan }) {
   const ws = weekStart(new Date());
   const inWeek = s => parseDate(s) >= ws;
   const days = new Set([...lifts.map(r => r.date), ...sessions.map(s => s.date)].filter(inWeek));
   const hipDays = new Set(sessions.filter(s => inWeek(s.date) && /hip/i.test(s.focus)).map(s => s.date));
   const mins = sessions.filter(s => inWeek(s.date)).reduce((a, s) => a + Number(s.minutes || 0), 0);
+  const cal = caloriesByDay({ lifts, sessions, plan });
+  const kcal = Object.entries(cal).filter(([d]) => inWeek(d)).reduce((a, [, c]) => a + c.kcal, 0);
   document.getElementById("stats").innerHTML = [
-    [days.size + "/6", "gym days"], [hipDays.size + "/3", "hip days"], [mins, "minutes"]
+    [days.size + "/6", "gym days"], [hipDays.size + "/3", "hip days"], [mins, "minutes"], ["~" + Math.round(kcal), "kcal (est.)"]
   ].map(([v, l]) => `<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
 }
 
@@ -425,6 +444,7 @@ function renderHistory({ lifts, sessions, plan }) {
   const el = document.getElementById("hist");
   if (!dates.length) { el.innerHTML = `<li class="empty">Nothing yet.</li>`; return; }
   const vol = volumeByDay({ lifts, plan });
+  const cal = caloriesByDay({ lifts, sessions, plan });
   el.innerHTML = dates.map(d => {
     const s = sessions.find(x => x.date === d);
     const rows = lifts.filter(r => r.date === d);
@@ -437,7 +457,7 @@ function renderHistory({ lifts, sessions, plan }) {
         : rs.map(r => `${r.side !== "both" ? r.side + " " : ""}${r.weight}×${r.reps}`).join(", ");
       return `<div class="s">${esc(ex)}: ${sets}</div>`;
     }).join("");
-    return `<li><div class="h">${fmt(d)} · ${esc(s?.focus || "Lift")}<span>${[vol[d] ? lb(vol[d].total) + " lb" : "", s?.minutes ? s.minutes + " min" : ""].filter(Boolean).join(" · ")}</span></div>${lines}</li>`;
+    return `<li><div class="h">${fmt(d)} · ${esc(s?.focus || "Lift")}<span>${[vol[d] ? lb(vol[d].total) + " lb" : "", s?.minutes ? s.minutes + " min" : "", cal[d] ? "~" + Math.round(cal[d].kcal) + " kcal" : ""].filter(Boolean).join(" · ")}</span></div>${lines}</li>`;
   }).join("");
 }
 
