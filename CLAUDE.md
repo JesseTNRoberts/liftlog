@@ -49,10 +49,12 @@ An exercise in `plan.json` can carry `"next": {"weight": 60, "reason": "knee cau
 - Thursday: he dislikes side planks, so use Pallof press (side = the side the machine is on). He does lots of pull-ups, so no seated row; shoulder press instead. Oct 29: Pallof with the machine on his left was much harder than on the right.
 - Don't schedule chest press the day after he's done it.
 - Nov 1: left hip flexor much tighter than right (fits the weaker left side on Pallof). Give the left extra stretch time.
-- Nov 2: left leg weaker on single-leg press (needed help on rep 5 at 120; right fine). Left held at 110, right at 120. Left hip flexor and right knee felt fine.
+- Nov 2: left leg weaker on single-leg press (needed help on rep 5 at 120; right fine). Left held at 110, right at 120. Left hip flexor and right knee felt fine. Nov 4: left caught up (130 and 135 × 5 even both sides; 145 was max, L 3 / R 4). Back to one target for both legs.
 - **Spare time rule:** legs are guaranteed every session; upper body gets worked in whenever there's time left. If he finishes the planned exercises early, add upper body (chest press, shoulder press) rather than more core. Don't wrap up early.
 - Chest press (vertical) and shoulder press are plate-loaded machines. Logged weights include the base (shoulder press base 12 lb, so 2 plates = 102). Suggest weights he can actually load.
 - Tuesday hamstrings now on the lying (prone) curl; Nov 3 the right leg pulled harder than the left.
+- Nov 4: said lifting every day felt like overworking. If he's tired, offer a lighter day or a different muscle group rather than pushing the plan. He finds the Pallof press boring; don't push it.
+- Single-leg press depth: stop at a 90° knee bend every time so numbers stay comparable. Abduction: sit all the way back (175 is near max that way).
 - Mobility: he won't get on the floor, so use standing stretches only. On voice, give one short instruction at a time; he times holds himself.
 
 - Calories on the page are a rough estimate: MET (5 for lifting, 2.3 for mobility) × body weight × minutes, from `plan.json` → `bodyweightLb` and `calories`. Missing minutes count as 10. Update `bodyweightLb` if he gives a new weight (Nov 3: 160 lb).

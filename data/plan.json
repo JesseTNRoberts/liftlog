@@ -59,13 +59,10 @@
       "targetReps": 5,
       "sets": 2,
       "step": 10,
-      "cue": "Knee tracks over toes",
+      "cue": "Knee tracks over toes. Stop at 90° knee bend, hips and lower back stay on the pad",
       "next": {
-        "bySide": {
-          "L": 110,
-          "R": 120
-        },
-        "reason": "left needed help at 120"
+        "weight": 140,
+        "reason": "145 was max (L 3, R 4); 140 for fives"
       },
       "group": "Quads & glutes"
     },
@@ -76,8 +73,12 @@
       "targetReps": 5,
       "sets": 2,
       "step": 5,
-      "cue": "Slow, 1–2 s hold at the widest point",
-      "group": "Hips"
+      "cue": "Sit all the way back. Slow, 1–2 s hold at the widest point",
+      "group": "Hips",
+      "next": {
+        "weight": 175,
+        "reason": "175 near max when seated fully back"
+      }
     },
     "Seated calf raise": {
       "sides": [
