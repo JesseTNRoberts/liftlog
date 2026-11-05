@@ -53,7 +53,7 @@ An exercise in `plan.json` can carry `"next": {"weight": 60, "reason": "knee cau
 - **Spare time rule:** legs are guaranteed every session; upper body gets worked in whenever there's time left. If he finishes the planned exercises early, add upper body (chest press, shoulder press) rather than more core. Don't wrap up early.
 - Chest press (vertical) and shoulder press are plate-loaded machines. Logged weights include the base (shoulder press base 12 lb, so 2 plates = 102). Suggest weights he can actually load.
 - Tuesday hamstrings now on the lying (prone) curl; Nov 3 the right leg pulled harder than the left.
-- Nov 4: said lifting every day felt like overworking. If he's tired, offer a lighter day or a different muscle group rather than pushing the plan. He finds the Pallof press boring: only use it on days he's working abs.
+- Nov 4: said lifting every day felt like overworking. If he's tired, offer a lighter day or a different muscle group rather than pushing the plan. He finds the Pallof press boring: at most once a week, on an ab day.
 - Single-leg press depth: stop at a 90° knee bend every time so numbers stay comparable. Abduction: sit all the way back (175 is near max that way).
 - Mobility: he won't get on the floor, so use standing stretches only. On voice, give one short instruction at a time; he times holds himself.
 
