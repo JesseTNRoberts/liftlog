@@ -1,17 +1,23 @@
 #!/usr/bin/env python3
 """Pull Jesse's Strava runs into data/runs.csv (summaries only, no GPS).
 
+Calories aren't in Strava's activity list, only in each activity's detail, so
+each sync also fetches details for up to DETAIL_BUDGET runs still missing them
+(newest first). Strava allows 100 reads per 15 minutes, so a big backfill
+finishes over a few syncs. calories "" = not fetched yet, "0" = Strava had none.
+
 Runs in GitHub Actions with three repo secrets:
   STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, STRAVA_REFRESH_TOKEN
 First run (empty runs.csv) pulls the whole history; later runs fetch anything
 newer than the latest saved run, plus a 7-day overlap so edits get picked up.
 """
-import csv, json, os, sys, time, urllib.parse, urllib.request
+import csv, json, os, sys, time, urllib.error, urllib.parse, urllib.request
 from datetime import datetime, timedelta, timezone
 
 PATH = os.path.join(os.path.dirname(__file__), "..", "data", "runs.csv")
 FIELDS = ["date", "start", "name", "type", "distance_mi", "moving_min", "elapsed_min",
-          "elev_ft", "avg_hr", "max_hr", "strava_id"]
+          "elev_ft", "avg_hr", "max_hr", "calories", "strava_id"]
+DETAIL_BUDGET = 90
 RUN_TYPES = {"Run", "TrailRun", "VirtualRun"}
 
 def post(url, data):
@@ -48,6 +54,7 @@ def to_row(a):
         "elev_ft": f'{a.get("total_elevation_gain", 0) * 3.28084:.0f}',
         "avg_hr": f'{a["average_heartrate"]:.0f}' if a.get("average_heartrate") else "",
         "max_hr": f'{a["max_heartrate"]:.0f}' if a.get("max_heartrate") else "",
+        "calories": "",
         "strava_id": str(a["id"]),
     }
 
@@ -61,9 +68,10 @@ def main():
         latest = max(r["date"] for r in rows.values())
         after = int((datetime.fromisoformat(latest).replace(tzinfo=timezone.utc) - timedelta(days=7)).timestamp())
     token = access_token()
-    page, added, seen = 1, 0, 0
+    page, added, seen, reads = 1, 0, 0, 1
     while True:
         batch = get(f"https://www.strava.com/api/v3/athlete/activities?after={after}&per_page=200&page={page}", token)
+        reads += 1
         if not batch:
             break
         for a in batch:
@@ -71,14 +79,37 @@ def main():
                 continue
             seen += 1
             r = to_row(a)
-            if r["strava_id"] not in rows:
+            old = rows.get(r["strava_id"])
+            if old is None:
                 added += 1
+            elif old.get("distance_mi") == r["distance_mi"] and old.get("moving_min") == r["moving_min"]:
+                r["calories"] = old.get("calories", "")  # unchanged run: keep fetched calories
             rows[r["strava_id"]] = r
         page += 1
         time.sleep(1)
+    # Fill in calories from activity details, newest runs first, within the rate limit.
+    todo = sorted((r for r in rows.values() if not r.get("calories")), key=lambda r: (r["date"], r["start"]), reverse=True)
+    filled = 0
+    for r in todo[:max(0, DETAIL_BUDGET - reads)]:
+        try:
+            a = get(f"https://www.strava.com/api/v3/activities/{r['strava_id']}", token)
+        except urllib.error.HTTPError as e:
+            if e.code == 429:
+                print("Hit Strava's rate limit; the rest will fill in on the next sync.")
+                break
+            if e.code == 404:
+                r["calories"] = "0"
+                continue
+            raise
+        r["calories"] = f'{a.get("calories") or 0:.0f}'
+        filled += 1
+        time.sleep(0.5)
+    left = sum(1 for r in rows.values() if not r.get("calories"))
+    print(f"Calories filled for {filled} runs, {left} still to fetch.")
+
     out = sorted(rows.values(), key=lambda r: (r["date"], r["start"]))
     with open(PATH, "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=FIELDS)
+        w = csv.DictWriter(f, fieldnames=FIELDS, extrasaction="ignore", restval="")
         w.writeheader()
         w.writerows(out)
     print(f"Checked {seen} runs, added {added}, total {len(out)}.")

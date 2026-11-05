@@ -247,7 +247,8 @@ function caloriesByDay({ lifts, sessions, plan, runs = [] }) {
   const perKgKm = cfg.runKcalPerKgKm || 1.036;
   runs.forEach(r => {
     const c = (out[r.date] ||= { kcal: 0, gym: 0, run: 0 });
-    const k = perKgKm * kg * r.mi * 1.609344;
+    // Use Strava's (Garmin, heart-rate based) calories when we have them; otherwise estimate from distance.
+    const k = Number(r.calories) > 0 ? Number(r.calories) : perKgKm * kg * r.mi * 1.609344;
     c.run += k; c.kcal += k;
   });
   return out;
