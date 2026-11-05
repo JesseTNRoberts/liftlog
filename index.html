@@ -485,8 +485,13 @@ function renderHistory({ lifts, sessions, plan, runs }) {
         ? rs.filter(r => r.side === sides[0]).map(r => `${r.weight}×${r.reps}`).join(", ") + " (each side)"
         : rs.map(r => `${r.side !== "both" ? r.side + " " : ""}${r.weight}×${r.reps}`).join(", ");
       return `<div class="s">${esc(ex)}: ${sets}</div>`;
-    }).join("") + runs.filter(r => r.date === d).map(r =>
-      `<div class="s run">Run: ${r.mi.toFixed(1)} mi · ${pace(r)}${Number(r.elev_ft) ? ` · ${r.elev_ft} ft up` : ""}</div>`).join("");
+    }).join("") + (() => {
+      // A run split by a gym stop shows up as several Strava activities: show the day as one line.
+      const rs = runs.filter(r => r.date === d); if (!rs.length) return "";
+      const t = { mi: rs.reduce((a, r) => a + r.mi, 0), min: rs.reduce((a, r) => a + r.min, 0) };
+      const up = rs.reduce((a, r) => a + Number(r.elev_ft || 0), 0);
+      return `<div class="s run">Run: ${t.mi.toFixed(1)} mi · ${pace(t)}${up ? ` · ${up} ft up` : ""}${rs.length > 1 ? ` · ${rs.length} parts` : ""}</div>`;
+    })();
     const dayMi = runs.filter(r => r.date === d).reduce((a, r) => a + r.mi, 0);
     return `<li><div class="h">${fmt(d)} · ${esc(s?.focus || (rows.length ? "Lift" : "Run"))}<span>${[dayMi ? dayMi.toFixed(1) + " mi" : "", vol[d] ? lb(vol[d].total) + " lb" : "", s?.minutes ? s.minutes + " min" : "", cal[d] ? "~" + Math.round(cal[d].kcal) + " kcal" : ""].filter(Boolean).join(" · ")}</span></div>${lines}</li>`;
   }).join("");
