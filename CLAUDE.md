@@ -66,4 +66,5 @@ An exercise in `plan.json` can carry `"next": {"weight": 60, "reason": "knee cau
 - No back-loaded lifts (no deadlifts, no barbell squats) because of a past back problem.
 - Prefers heavy weight and low reps. Keep abduction slow, with a hold at the widest point.
 - Mondays and Fridays are 7-mile run days, so gym work is light then.
-- Running is tracked in Strava; it's not part of this repo yet.
+- Running is tracked in Strava (GPS stays in Strava/Garmin). `data/runs.csv` holds run summaries only (no GPS), filled by `scripts/strava_sync.py` via the `Sync Strava runs` workflow twice a day. Never hand-edit it; never add GPS or location data (the repo is public). Year goal is in `plan.json` → `running.yearGoalMi`.
+- Setup (one time): repo secrets `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, `STRAVA_REFRESH_TOKEN` (scope `activity:read_all`). If the workflow warns that Strava issued a new refresh token, the secret needs updating.

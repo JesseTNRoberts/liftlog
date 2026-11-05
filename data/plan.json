@@ -198,11 +198,15 @@
   ],
   "bodyweightLb": 160,
   "calories": {
-    "note": "Estimate = MET × body weight (kg) × hours. Missing minutes count as 10.",
+    "note": "Lifting: MET × body weight (kg) × hours, missing minutes count as 10. Runs: 1.036 kcal per kg per km.",
     "met": {
       "default": 5.0,
       "Mobility": 2.3
     },
-    "defaultMinutes": 10
+    "defaultMinutes": 10,
+    "runKcalPerKgKm": 1.036
+  },
+  "running": {
+    "yearGoalMi": 1000
   }
 }

@@ -1,0 +1,46 @@
+name: Sync Strava runs
+
+on:
+  schedule:
+    - cron: "17 13 * * *"   # about 8–9am Eastern, after the morning run
+    - cron: "17 23 * * *"   # evening catch-up
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: strava-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Pull runs from Strava
+        env:
+          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+          STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+          STRAVA_REFRESH_TOKEN: ${{ secrets.STRAVA_REFRESH_TOKEN }}
+        run: python scripts/strava_sync.py
+      - name: Commit if anything changed
+        id: commit
+        run: |
+          if git diff --quiet data/runs.csv; then echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+          git config user.name "liftlog-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/runs.csv
+          git commit -m "Sync Strava runs"
+          git push
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+      # Pushes made with GITHUB_TOKEN don't start other workflows, so start the Pages deploy directly.
+      - name: Redeploy the page
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref main
