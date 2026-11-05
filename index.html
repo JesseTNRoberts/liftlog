@@ -87,6 +87,7 @@
   .goal-bar em { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--ink); }
   .run-sub { font-size: 13px; font-weight: 600; margin: 14px 0 2px; }
   .hist .s.run { color: var(--run); }
+  .hist .s.run .hr { color: var(--accent); }
   .hist { list-style: none; margin: 0; padding: 0; }
   .hist li { border-top: 1px solid var(--line); padding: 10px 0; }
   .hist li:first-child { border-top: 0; padding-top: 0; }
@@ -490,7 +491,13 @@ function renderHistory({ lifts, sessions, plan, runs }) {
       const rs = runs.filter(r => r.date === d); if (!rs.length) return "";
       const t = { mi: rs.reduce((a, r) => a + r.mi, 0), min: rs.reduce((a, r) => a + r.min, 0) };
       const up = rs.reduce((a, r) => a + Number(r.elev_ft || 0), 0);
-      return `<div class="s run">Run: ${t.mi.toFixed(1)} mi · ${pace(t)}${up ? ` · ${up} ft up` : ""}${rs.length > 1 ? ` · ${rs.length} parts` : ""}</div>`;
+      // Average HR weighted by moving time across the parts; peak is the highest of any part.
+      const hrRs = rs.filter(r => Number(r.avg_hr));
+      const hrMin = hrRs.reduce((a, r) => a + r.min, 0);
+      const avgHr = hrMin ? Math.round(hrRs.reduce((a, r) => a + Number(r.avg_hr) * r.min, 0) / hrMin) : 0;
+      const maxHr = Math.max(0, ...rs.map(r => Number(r.max_hr) || 0));
+      const hr = avgHr ? `<div class="hr">♥ ${avgHr} avg · ${maxHr} peak bpm</div>` : "";
+      return `<div class="s run">Run: ${t.mi.toFixed(1)} mi · ${pace(t)}${up ? ` · ${up} ft up` : ""}${rs.length > 1 ? ` · ${rs.length} parts` : ""}${hr}</div>`;
     })();
     const dayMi = runs.filter(r => r.date === d).reduce((a, r) => a + r.mi, 0);
     return `<li><div class="h">${fmt(d)} · ${esc(s?.focus || (rows.length ? "Lift" : "Run"))}<span>${[dayMi ? dayMi.toFixed(1) + " mi" : "", vol[d] ? lb(vol[d].total) + " lb" : "", s?.minutes ? s.minutes + " min" : "", cal[d] ? "~" + Math.round(cal[d].kcal) + " kcal" : ""].filter(Boolean).join(" · ")}</span></div>${lines}</li>`;
