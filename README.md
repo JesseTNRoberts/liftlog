@@ -10,7 +10,7 @@ To publish: Settings → Pages → Deploy from branch → `main`, folder `/`.
 
 ## Strava runs
 
-`data/runs.csv` is filled by the **Sync Strava runs** workflow (twice a day, or run it by hand from the Actions tab). It stores summaries only: date, distance, time, elevation, heart rate. No GPS. The first run pulls your whole history.
+`data/runs.csv` is filled by the **Sync Strava runs** workflow (every hour, or run it by hand from the Actions tab). It stores summaries only: date, distance, time, elevation, heart rate. No GPS. The first run pulls your whole history.
 
 One-time setup:
 1. Create an app at https://www.strava.com/settings/api (Authorization Callback Domain: `localhost`).

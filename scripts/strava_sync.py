@@ -17,7 +17,7 @@ from datetime import datetime, timedelta, timezone
 PATH = os.path.join(os.path.dirname(__file__), "..", "data", "runs.csv")
 FIELDS = ["date", "start", "name", "type", "distance_mi", "moving_min", "elapsed_min",
           "elev_ft", "avg_hr", "max_hr", "calories", "strava_id"]
-DETAIL_BUDGET = 90
+DETAIL_BUDGET = 35  # reads per sync incl. the list call; 24 hourly syncs stay under Strava's 1,000/day
 RUN_TYPES = {"Run", "TrailRun", "VirtualRun"}
 
 def post(url, data):
