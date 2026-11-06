@@ -62,6 +62,35 @@
   .delta.up { background: var(--good-soft); color: var(--good); }
   .delta.flat, .delta.down { background: var(--heat0); color: var(--muted); }
   .chart-plot { margin-top: 6px; }
+  .tap { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .chart.tap:hover, .tap-svg:hover { border-color: var(--muted); }
+  .chart.tap:focus-visible, .tap-svg:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .tap-hint { font-size: 11px; color: var(--muted); font-weight: 400; margin-left: 6px; }
+  dialog#bd { border: 1px solid var(--line); border-radius: 14px; padding: 0; background: var(--card); color: var(--ink);
+    width: min(520px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); box-shadow: 0 12px 40px rgba(0,0,0,.25); }
+  dialog#bd::backdrop { background: rgba(0,0,0,.45); }
+  .bd { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .bd-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .bd-h h3 { font-size: 17px; font-weight: 600; margin: 0; }
+  .bd-h .sub { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .bd-close { font: 500 13px Inter, sans-serif; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 8px; padding: 5px 10px; cursor: pointer; }
+  .bd-top { display: flex; align-items: center; gap: 16px; }
+  .bd-top svg { flex: none; }
+  .bd-kpis { display: grid; gap: 8px; font-size: 12.5px; color: var(--muted); }
+  .bd-kpis b { display: block; font: 500 18px "JetBrains Mono", monospace; color: var(--ink); }
+  .bd-scroll { max-height: 42dvh; overflow: auto; border-top: 1px solid var(--line); }
+  .bd-t { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .bd-t th { text-align: left; font-weight: 500; font-size: 11.5px; color: var(--muted); padding: 6px 4px; position: sticky; top: 0; background: var(--card); border-bottom: 1px solid var(--line); }
+  .bd-t th.num { text-align: right; }
+  .bd-t td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .bd-t td.num { text-align: right; white-space: nowrap; font-family: "JetBrains Mono", monospace; font-size: 12.5px; }
+  .bd-t td i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 7px; }
+  .bd-t td .sets { display: block; font: 11.5px "JetBrains Mono", monospace; color: var(--muted); margin-top: 2px; }
+  .bd-t tr.on td { background: var(--accent-soft); }
+  .bd-t tr[data-r] { cursor: pointer; }
+  svg .slice { cursor: pointer; transition: opacity .15s; }
+  svg.dim .slice:not(.on) { opacity: .35; }
+  .bd-plot { cursor: pointer; }
   .chart-first { font-size: 13px; color: var(--muted); padding: 10px 0 8px; }
   .legend { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 4px 0 8px; }
   .legend > span { white-space: nowrap; }
@@ -333,7 +362,8 @@ function exerciseSeries(lifts, name) {
   });
 }
 
-function renderCharts({ lifts, plan }) {
+function renderCharts(data) {
+  const { lifts, plan } = data;
   const el = document.getElementById("charts");
   // Plan order first (priority lifts at the top), then anything else that was logged.
   const logged = new Set(lifts.map(r => r.exercise));
@@ -361,7 +391,7 @@ function renderCharts({ lifts, plan }) {
     const plot = allDates.length < 2
       ? `<div class="chart-first">First session ${fmt(allDates[0])}. The line starts next time.</div>`
       : `<div class="chart-plot" data-i="${i}"></div>`;
-    return `<div class="card chart"><div class="chart-head"><div><div class="chart-name">${esc(name)}</div><div class="chart-sub">${sub}</div>${delta}</div><div class="chart-now">${now}</div></div>${plot}</div>`;
+    return `<div class="card chart" data-name="${esc(name)}"><div class="chart-head"><div><div class="chart-name">${esc(name)}</div><div class="chart-sub">${sub}</div>${delta}</div><div class="chart-now">${now}</div></div>${plot}</div>`;
   }).join("");
   const draw = () => el.querySelectorAll(".chart-plot").forEach(div => {
     const name = names[+div.dataset.i];
@@ -370,6 +400,143 @@ function renderCharts({ lifts, plan }) {
   });
   draw();
   onResize(draw);
+  el.querySelectorAll(".chart[data-name]").forEach(card => makeTappable(card, card.dataset.name + ": see every session", () => showLiftBreakdown(card.dataset.name, data)));
+}
+
+// ---------- Breakdown dialogs (same pattern as Plate Log: tap a chart, see where it came from) ----------
+const SLICE_COLORS = ["#2f6fb3","#d2581f","#3a8a5a","#a3489a","#c4952b","#4f8f9e","#c4577a","#5a5fc4","#8a9a2b","#7a6a5a","#2b8a8a","#b05a3c"];
+function bdDialog() {
+  let dlg = document.getElementById("bd");
+  if (!dlg) {
+    dlg = document.createElement("dialog"); dlg.id = "bd"; document.body.appendChild(dlg);
+    dlg.addEventListener("click", ev => { if (ev.target === dlg) dlg.close(); });
+  }
+  return dlg;
+}
+function openBreakdown(title, sub, body, wire) {
+  const dlg = bdDialog();
+  dlg.innerHTML = `<div class="bd"><div class="bd-h"><div><h3>${esc(title)}</h3><div class="sub">${sub}</div></div><button class="bd-close" data-close>Close</button></div>${body}</div>`;
+  dlg.querySelector("[data-close]").onclick = () => dlg.close();
+  dlg.showModal();
+  dlg.querySelector(".bd-scroll")?.scrollTo(0, 0);
+  wire?.(dlg);
+  return dlg;
+}
+// Highlight row i (and slice i, if there's a donut) and scroll the row into view.
+function bdSelect(dlg, i) {
+  dlg.querySelectorAll("tr.on, .slice.on").forEach(x => x.classList.remove("on"));
+  const svg = dlg.querySelector("svg.donut");
+  const slice = dlg.querySelector(`.slice[data-i="${i}"]`);
+  if (svg) svg.classList.toggle("dim", !!slice);
+  slice?.classList.add("on");
+  const r = dlg.querySelector(`tr[data-r="${i}"]`);
+  if (r) { r.classList.add("on"); const box = dlg.querySelector(".bd-scroll"); box?.scrollTo({ top: r.offsetTop - box.clientHeight / 2 + r.offsetHeight / 2, behavior: "smooth" }); }
+}
+function wireSelect(dlg) {
+  dlg.querySelectorAll(".slice, tr[data-r]").forEach(el => el.addEventListener("click", () => bdSelect(dlg, el.dataset.i ?? el.dataset.r)));
+}
+function donutSVG(items, size = 150) {
+  const total = items.reduce((a, it) => a + it.value, 0); if (!total) return "";
+  const R = size / 2, r = R * 0.6; let a0 = -Math.PI / 2, out = "";
+  const pt = (rad, a) => `${(R + rad * Math.cos(a)).toFixed(2)},${(R + rad * Math.sin(a)).toFixed(2)}`;
+  items.forEach((it, i) => {
+    if (!it.value) return;
+    const a1 = a0 + it.value / total * Math.PI * 2 - (items.filter(x => x.value).length > 1 ? 0.012 : 0);
+    const large = a1 - a0 > Math.PI ? 1 : 0;
+    const d = it.value === total
+      ? `M${pt(R, -Math.PI/2)}A${R},${R} 0 1 1 ${pt(R, Math.PI*1.5 - .0001)}L${pt(r, Math.PI*1.5 - .0001)}A${r},${r} 0 1 0 ${pt(r, -Math.PI/2)}Z`
+      : `M${pt(R, a0)}A${R},${R} 0 ${large} 1 ${pt(R, a1)}L${pt(r, a1)}A${r},${r} 0 ${large} 0 ${pt(r, a0)}Z`;
+    out += `<path class="slice" data-i="${i}" d="${d}" fill="${it.color}"><title>${esc(it.label)}: ${it.title || it.value}</title></path>`;
+    a0 += it.value / total * Math.PI * 2;
+  });
+  return `<svg class="donut" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" role="img">${out}</svg>`;
+}
+function runDaySummary(rs) {
+  const mi = rs.reduce((a, r) => a + r.mi, 0), min = rs.reduce((a, r) => a + r.min, 0);
+  const hrRs = rs.filter(r => Number(r.avg_hr)), hrMin = hrRs.reduce((a, r) => a + r.min, 0);
+  const avgHr = hrMin ? Math.round(hrRs.reduce((a, r) => a + Number(r.avg_hr) * r.min, 0) / hrMin) : 0;
+  const maxHr = Math.max(0, ...rs.map(r => Number(r.max_hr) || 0));
+  const up = rs.reduce((a, r) => a + Number(r.elev_ft || 0), 0);
+  return { mi, min, avgHr, maxHr, up, n: rs.length };
+}
+
+// Tap a lift's card: bigger chart plus every session with all its sets.
+function showLiftBreakdown(name, { lifts, plan }) {
+  const unit = plan.exercises[name]?.unit || plan.units;
+  const rows = lifts.filter(r => r.exercise === name);
+  const dates = [...new Set(rows.map(r => r.date))].sort().reverse();
+  const timed = unit === "s";
+  const sess = dates.map(d => {
+    const rs = rows.filter(r => r.date === d);
+    const t = topSet(rs);
+    const bySide = ["L", "R", "both"].map(sd => [sd, rs.filter(r => r.side === sd)]).filter(([, x]) => x.length);
+    const sets = bySide.map(([sd, x]) => `${sd !== "both" ? sd + " " : ""}${x.map(r => `${r.weight}×${r.reps}`).join(", ")}`).join(" · ");
+    return { d, t, sets, vol: timed ? 0 : rs.reduce((a, r) => a + r.weight * r.reps, 0), n: rs.length };
+  });
+  const best = sess.reduce((b, s) => !b || s.t.weight > b.t.weight || (s.t.weight === b.t.weight && s.t.reps > b.t.reps) ? s : b, null);
+  const totalVol = sess.reduce((a, s) => a + s.vol, 0);
+  const cue = plan.exercises[name]?.cue;
+  const body = `${dates.length > 1 ? `<div class="bd-plot"></div>` : ""}
+    <div class="bd-kpis" style="grid-template-columns:repeat(3,1fr)"><div><b>${best.t.weight}×${best.t.reps}</b>best top set</div><div><b>${dates.length}</b>sessions</div><div><b>${timed ? "–" : lb(totalVol)}</b>${timed ? "timed" : "lb total volume"}</div></div>
+    ${cue ? `<div class="chart-sub">${esc(cue)}</div>` : ""}
+    <div class="bd-scroll"><table class="bd-t"><thead><tr><th>Session</th><th class="num">Top</th><th class="num">Volume</th></tr></thead><tbody>
+    ${sess.map((s, i) => `<tr data-r="${i}" data-d="${s.d}"><td>${fmt(s.d)}<span class="sets">${s.sets}</span></td><td class="num">${s.t.weight}×${s.t.reps}</td><td class="num">${timed ? "–" : lb(s.vol)}</td></tr>`).join("")}
+    </tbody></table></div>`;
+  openBreakdown(name, `${plan.exercises[name]?.group || ""}${plan.exercises[name]?.group ? " · " : ""}every session, newest first · tap a point`, body, dlg => {
+    wireSelect(dlg);
+    const plot = dlg.querySelector(".bd-plot"); if (!plot) return;
+    plot.innerHTML = lineChart(exerciseSeries(lifts, name), unit, Math.floor(plot.clientWidth));
+    // Tap anywhere on the chart: pick the nearest session and highlight its row and point.
+    const pts = [...plot.querySelectorAll("circle")].map(c => ({ c, x: +c.getAttribute("cx"), d: c.querySelector("title")?.textContent.split(":")[0] }));
+    plot.addEventListener("click", ev => {
+      const bx = plot.querySelector("svg").getBoundingClientRect().left, x = ev.clientX - bx;
+      const near = pts.reduce((b, p) => !b || Math.abs(p.x - x) < Math.abs(b.x - x) ? p : b, null); if (!near) return;
+      pts.forEach(p => p.c.setAttribute("stroke-width", p.d === near.d ? 4 : 2));
+      const i = sess.findIndex(s => fmt(s.d) === near.d); if (i >= 0) bdSelect(dlg, i);
+    });
+  });
+}
+
+// Tap the year curve: miles by month.
+function showYearBreakdown({ runs }, year) {
+  const yr = runs.filter(r => r.date.startsWith(year + ""));
+  const months = [...Array(12).keys()].map(m => {
+    const rs = yr.filter(r => Number(r.date.slice(5, 7)) === m + 1);
+    const days = new Set(rs.map(r => r.date));
+    return { m, rs, days: days.size, ...runDaySummary(rs) };
+  }).filter(x => x.n);
+  const total = months.reduce((a, x) => a + x.mi, 0);
+  const name = m => new Date(year, m, 1).toLocaleDateString(undefined, { month: "long" });
+  const items = months.map((x, i) => ({ label: name(x.m), value: x.mi, color: SLICE_COLORS[x.m % 12], title: x.mi.toFixed(1) + " mi" }));
+  const biggest = months.reduce((b, x) => x.mi > b.mi ? x : b, months[0]);
+  const body = `<div class="bd-top">${donutSVG(items)}<div class="bd-kpis"><div><b>${total.toFixed(1)}</b>miles in ${year}</div><div><b>${(total / Math.max(1, months.length)).toFixed(1)}</b>avg per month</div><div><b>${name(biggest.m).slice(0, 3)}</b>biggest month (${biggest.mi.toFixed(0)} mi)</div></div></div>
+    <div class="bd-scroll"><table class="bd-t"><thead><tr><th>Month</th><th class="num">Miles</th><th class="num">Days</th><th class="num">Pace</th><th class="num">Avg HR</th></tr></thead><tbody>
+    ${months.map((x, i) => `<tr data-r="${i}"><td><i style="background:${items[i].color}"></i>${name(x.m)}</td><td class="num">${x.mi.toFixed(1)}</td><td class="num">${x.days}</td><td class="num">${pace(x)}</td><td class="num">${x.avgHr || "–"}</td></tr>`).join("")}
+    </tbody></table></div>`;
+  openBreakdown(`${year} miles`, `by month · ${yr.length} activities · tap a slice`, body, wireSelect);
+}
+
+// Tap a week's bar: that week's miles by day.
+function showWeekBreakdown({ runs, lifts, sessions, plan }, start) {
+  const end = new Date(start); end.setDate(end.getDate() + 7);
+  const days = [...Array(7).keys()].map(i => { const d = new Date(start); d.setDate(d.getDate() + i); return iso(d); });
+  const cal = caloriesByDay({ lifts, sessions, plan, runs });
+  const rowsD = days.map(d => ({ d, rs: runs.filter(r => r.date === d), gym: sessions.find(s => s.date === d)?.focus || (lifts.some(r => r.date === d) ? "Lift" : "") }))
+    .map(x => ({ ...x, ...runDaySummary(x.rs), kcal: cal[x.d]?.run || 0 }));
+  const total = rowsD.reduce((a, x) => a + x.mi, 0);
+  const runDays = rowsD.filter(x => x.n);
+  const items = rowsD.map((x, i) => ({ label: dateOf(x.d), value: x.mi, color: SLICE_COLORS[i], title: x.mi.toFixed(1) + " mi" }));
+  const s = runDaySummary(runs.filter(r => days.includes(r.date)));
+  const body = `<div class="bd-top">${donutSVG(items)}<div class="bd-kpis"><div><b>${total.toFixed(1)}</b>miles</div><div><b>${pace(s) || "–"}</b>avg pace</div><div><b>${s.avgHr || "–"}</b>avg heart rate</div></div></div>
+    <div class="bd-scroll"><table class="bd-t"><thead><tr><th>Day</th><th class="num">Miles</th><th class="num">Pace</th><th class="num">HR</th></tr></thead><tbody>
+    ${rowsD.map((x, i) => `<tr${x.n ? ` data-r="${i}"` : ""}><td><i style="background:${x.n ? items[i].color : "transparent"}"></i>${dateOf(x.d)}${x.gym || x.n > 1 ? `<span class="sets">${[x.gym ? "gym: " + esc(x.gym) : "", x.n > 1 ? x.n + " parts" : ""].filter(Boolean).join(" · ")}</span>` : ""}</td><td class="num">${x.n ? x.mi.toFixed(1) : "–"}</td><td class="num">${x.n ? pace(x) : ""}</td><td class="num">${x.avgHr ? x.avgHr + " / " + x.maxHr : ""}</td></tr>`).join("")}
+    </tbody></table></div>`;
+  openBreakdown(`Week of ${fmt(iso(start))}`, `${runDays.length} run day${runDays.length === 1 ? "" : "s"} · ~${lb(rowsD.reduce((a, x) => a + x.kcal, 0))} kcal running · tap a slice`, body, wireSelect);
+}
+const dateOf = d => parseDate(d).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+function makeTappable(el, label, go) {
+  el.classList.add("tap"); el.setAttribute("role", "button"); el.tabIndex = 0; el.setAttribute("aria-label", label);
+  el.onclick = go; el.onkeydown = ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); go(); } };
 }
 
 const resizeFns = [];
@@ -468,7 +635,7 @@ function renderVolume(data) {
   el.querySelectorAll(".vbar").forEach(b => b.addEventListener("click", () => { volSelected = b.dataset.d; renderVolume(data); }));
 }
 
-const pace = r => { if (!r.mi || !r.min) return ""; const p = r.min / r.mi; return `${Math.floor(p)}:${String(Math.round((p % 1) * 60)).padStart(2, "0")}/mi`; };
+const pace = r => { if (!r.mi || !r.min) return ""; const sec = Math.round(r.min / r.mi * 60); return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}/mi`; };
 
 function renderHistory({ lifts, sessions, plan, runs }) {
   const dates = [...new Set([...lifts.map(r => r.date), ...sessions.map(s => s.date), ...runs.map(r => r.date)])].sort().reverse().slice(0, 15);
@@ -506,7 +673,8 @@ function renderHistory({ lifts, sessions, plan, runs }) {
 }
 
 // Running: progress toward the year goal, and weekly miles for the last 12 weeks.
-function renderRunning({ runs, plan }) {
+function renderRunning(data) {
+  const { runs, plan } = data;
   const el = document.getElementById("running");
   const goal = plan.running?.yearGoalMi || 1000;
   if (!runs.length) { el.innerHTML = `<p class="empty">Runs appear here after the first Strava sync.</p>`; return; }
@@ -526,7 +694,7 @@ function renderRunning({ runs, plan }) {
   let acc = 0, pts = [`${x(iso(y0))},${yy(0)}`];
   yr.forEach(r => { acc += r.mi; pts.push(`${x(r.date)},${yy(acc)}`); });
   pts.push(`${x(iso(today))},${yy(acc)}`);
-  let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img">`;
+  let svg = `<svg class="tap-svg year-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img">`;
   svg += `<line x1="${P.l}" x2="${W - P.r}" y1="${yy(0)}" y2="${yy(0)}" stroke="var(--line)"/>`;
   svg += `<line x1="${x(iso(y0))}" y1="${yy(0)}" x2="${W - P.r}" y2="${yy(goal)}" stroke="var(--muted)" stroke-dasharray="4 4" stroke-width="1.5"/>`;
   svg += `<text x="${W - P.r}" y="${yy(goal) - 4}" text-anchor="end">${goal.toLocaleString()} goal</text>`;
@@ -550,7 +718,9 @@ function renderRunning({ runs, plan }) {
   let svg2 = `<svg viewBox="0 0 ${W} ${H2}" width="${W}" height="${H2}" role="img"><line x1="${P2.l}" x2="${W - P2.r}" y1="${y2(0)}" y2="${y2(0)}" stroke="var(--line)"/>`;
   wk.forEach((m, i) => {
     const cx = P2.l + slot * (i + 0.5), cur = i === 11;
+    svg2 += `<g class="wk" data-w="${i}" style="cursor:pointer"><rect x="${cx - slot / 2}" y="${P2.t}" width="${slot}" height="${H2 - P2.t - P2.b}" fill="transparent"/>`;
     if (m) svg2 += `<rect x="${cx - bw / 2}" y="${y2(m)}" width="${bw}" height="${y2(0) - y2(m)}" rx="3" fill="var(--run)" opacity="${cur ? 0.55 : 1}"><title>Week of ${fmt(iso(weeks[i]))}: ${m.toFixed(1)} mi</title></rect>`;
+    svg2 += `</g>`;
     if (m && (i % 2 === 1 || cur || W > 420)) svg2 += `<text class="pt${cur ? " last" : ""}" x="${cx}" y="${y2(m) - 5}" text-anchor="middle">${Math.round(m)}</text>`;
     if (i % 3 === 2 || cur) svg2 += `<text x="${cx}" y="${H2 - 6}" text-anchor="middle">${cur ? "This wk" : fmt(iso(weeks[i]))}</text>`;
   });
@@ -560,7 +730,9 @@ function renderRunning({ runs, plan }) {
   const status = left <= 0 ? `Goal reached` : `${Math.abs(diff).toFixed(1)} mi ${diff >= 0 ? "ahead of" : "behind"} pace · ${(left / daysLeft).toFixed(1)} mi/day to finish`;
   el.innerHTML = `<div class="goal-head"><div><div class="v">${total.toFixed(1)}<small> of ${goal.toLocaleString()} mi</small></div><div class="l">${status}</div></div></div>
     <div class="goal-bar"><span style="width:${Math.min(100, total / goal * 100)}%"></span><em style="left:${Math.min(100, onPace / goal * 100)}%"></em></div>
-    <div class="run-sub">${year} so far</div>${svg}<div class="run-sub">Weekly miles</div>${svg2}`;
+    <div class="run-sub">${year} so far<span class="tap-hint">tap for months</span></div>${svg}<div class="run-sub">Weekly miles<span class="tap-hint">tap a week</span></div>${svg2}`;
+  makeTappable(el.querySelector(".year-svg"), `${year} miles by month`, () => showYearBreakdown(data, year));
+  el.querySelectorAll(".wk").forEach(g => g.addEventListener("click", () => showWeekBreakdown(data, weeks[+g.dataset.w])));
 }
 
 document.getElementById("date").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
