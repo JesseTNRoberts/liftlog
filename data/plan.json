@@ -204,7 +204,7 @@
       "sets": "145×7, 160×5, 175×5"
     }
   ],
-  "bodyweightLb": 160,
+  "bodyweightLb": 155,
   "calories": {
     "note": "Lifting: MET × body weight (kg) × hours, missing minutes count as 10. Runs: 1.036 kcal per kg per km.",
     "met": {

@@ -57,7 +57,7 @@ An exercise in `plan.json` can carry `"next": {"weight": 60, "reason": "knee cau
 - Single-leg press depth: stop at a 90° knee bend every time so numbers stay comparable. Abduction: sit all the way back (175 is near max that way).
 - Mobility: he won't get on the floor, so use standing stretches only. On voice, give one short instruction at a time; he times holds himself.
 
-- Calories on the page are a rough estimate: MET (5 for lifting, 2.3 for mobility) × body weight × minutes, from `plan.json` → `bodyweightLb` and `calories`. Missing minutes count as 10. Update `bodyweightLb` if he gives a new weight (Nov 3: 160 lb).
+- Calories on the page are a rough estimate: MET (5 for lifting, 2.3 for mobility) × body weight × minutes, from `plan.json` → `bodyweightLb` and `calories`. Missing minutes count as 10. Update `bodyweightLb` if he gives a new weight (Nov 3: 160 lb; Nov 7: 155 lb).
 
 ## Plan context
 
