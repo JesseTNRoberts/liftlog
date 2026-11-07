@@ -120,8 +120,12 @@
       "sets": 2,
       "step": 5,
       "start": "Find a weight for 8 hard reps",
-      "cue": "Supports the back",
-      "group": "Back"
+      "cue": "Cable. Sit tall, pull to the belly, squeeze shoulder blades",
+      "group": "Back",
+      "next": {
+        "weight": 130,
+        "reason": "130 × 8 had 1 left"
+      }
     },
     "Side plank": {
       "sides": [
@@ -152,8 +156,12 @@
       "targetReps": 8,
       "sets": 2,
       "step": 5,
-      "cue": "Plate-loaded; weight includes the 12 lb base, so jumps are uneven (2 plates = 102)",
-      "group": "Shoulders"
+      "cue": "Plate-loaded; base is 12 lb per arm (24 total), included in logged weight, so 45 a side = 114",
+      "group": "Shoulders",
+      "next": {
+        "weight": 114,
+        "reason": "repeat until both sets reach 8"
+      }
     },
     "Pallof press": {
       "sides": [

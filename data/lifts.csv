@@ -17,13 +17,13 @@ date,exercise,side,set,weight,reps,notes
 2026-10-28,Hip abduction,both,1,100,10,light recovery set; too sore for heavy
 2026-10-28,Chest press,both,1,65,10,
 2026-10-28,Chest press,both,2,85,10,3-4 reps left
-2026-10-29,Pallof press,L,1,22,10,"machine on left; tough"
+2026-10-29,Pallof press,L,1,22,10,machine on left; tough
 2026-10-29,Pallof press,R,1,22,10,machine on right; easy
-2026-10-29,Pallof press,L,2,22,10,"machine on left; tough"
+2026-10-29,Pallof press,L,2,22,10,machine on left; tough
 2026-10-29,Pallof press,R,2,22,10,machine on right; easy
-2026-10-29,Shoulder press,both,1,50,8,about 10 left
-2026-10-29,Shoulder press,both,2,80,8,1 left
-2026-10-29,Shoulder press,both,3,80,5,tired
+2026-10-29,Shoulder press,both,1,62,8,about 10 left; +12 base fix
+2026-10-29,Shoulder press,both,2,92,8,1 left; +12 base fix
+2026-10-29,Shoulder press,both,3,92,5,tired; +12 base fix
 2026-11-02,Single-leg press,L,1,110,5,about 3 left
 2026-11-02,Single-leg press,R,1,110,5,about 3 left
 2026-11-02,Single-leg press,L,2,120,5,needed a little help on rep 5
@@ -32,14 +32,14 @@ date,exercise,side,set,weight,reps,notes
 2026-11-02,Hip abduction,both,2,170,5,slow with hold
 2026-11-02,Pallof press,L,1,22,10,machine on left; slightly harder
 2026-11-02,Pallof press,R,1,22,10,machine on right
-2026-11-02,Shoulder press,both,1,82,8,4-5 left
+2026-11-02,Shoulder press,both,1,94,8,4-5 left; +12 base fix
 2026-11-03,Calf extension,both,1,180,5,about 6 left
 2026-11-03,Calf extension,both,2,210,5,about 3 left
 2026-11-03,Lying hamstring curl,both,1,60,8,"about 5 left, no knee pull"
 2026-11-03,Lying hamstring curl,both,2,80,8,"about 2 left, knee quiet; right pulled harder than left"
 2026-11-03,Chest press,both,1,105,8,"vertical, plate-loaded; about 2 left"
 2026-11-03,Chest press,both,2,105,8,vertical
-2026-11-03,Shoulder press,both,1,102,6,plate-loaded; 2 plates
+2026-11-03,Shoulder press,both,1,114,6,plate-loaded; 2 plates; +12 base fix
 2026-11-04,Single-leg press,L,1,130,5,3-4 left
 2026-11-04,Single-leg press,R,1,130,5,3-4 left
 2026-11-04,Single-leg press,L,2,135,5,3-4 left
@@ -56,3 +56,8 @@ date,exercise,side,set,weight,reps,notes
 2026-11-06,Hip abduction,both,2,175,5,seated fully back
 2026-11-06,Chest press,both,1,120,8,"vertical, 2-3 left"
 2026-11-06,Chest press,both,2,120,8,vertical
+2026-11-07,Shoulder press,both,1,114,8,0 left
+2026-11-07,Shoulder press,both,2,114,4,"4.5, last rep partial"
+2026-11-07,Seated row,both,1,70,8,cable; ~8 left
+2026-11-07,Seated row,both,2,110,8,cable; ~4 left
+2026-11-07,Seated row,both,3,130,8,cable; 1 left
