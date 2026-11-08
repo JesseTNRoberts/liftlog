@@ -137,11 +137,35 @@
   .vd-sets { font: 12px "JetBrains Mono", monospace; color: var(--muted); padding-left: 16px; }
   .vd-n { font-family: "JetBrains Mono", monospace; color: var(--muted); font-weight: 500; }
   .empty { color: var(--muted); font-size: 14px; }
+  .run-link { display: inline-block; margin-top: 12px; font-weight: 600; font-size: 14px; color: var(--run); text-decoration: none; }
+  .back { color: var(--muted); text-decoration: none; font-size: 14px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chips button { font: 500 13px Inter, sans-serif; border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 999px; padding: 5px 11px; cursor: pointer; }
+  .chips button.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .an-sum { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 8px; margin: 12px 0 6px; }
+  .an-sum b { display: block; font: 500 18px "JetBrains Mono", monospace; }
+  .an-sum span { font-size: 12px; color: var(--muted); }
+  .an-sum em { font-style: normal; font-size: 11.5px; font-weight: 600; }
+  .an-sum em.up { color: var(--good); } .an-sum em.down { color: var(--accent); }
+  .an-note { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .an-plot { margin-top: 8px; }
+  .an-plot svg g[data-b] { cursor: pointer; }
+  .yoy-key { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; margin: 8px 0 4px; }
+  .yoy-key button { font: inherit; border: 0; background: none; color: var(--ink); padding: 2px 0; cursor: pointer; }
+  .yoy-key i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: 3px; }
+  .yoy-key small { color: var(--muted); font-family: "JetBrains Mono", monospace; margin-left: 4px; }
+  .recs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .rec { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--card); text-align: left; color: var(--ink); font: inherit; }
+  .rec b { display: block; font: 500 18px "JetBrains Mono", monospace; }
+  .rec span { font-size: 12px; color: var(--muted); display: block; }
+  button.rec { cursor: pointer; }
+  .pat { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  @media (min-width: 640px) { .pat { grid-template-columns: 1fr 1fr; } .recs { grid-template-columns: repeat(4, 1fr); } }
   .err { color: var(--accent); }
 </style>
 </head>
 <body>
-<main>
+<main id="mainView">
   <header>
     <h1>Lift Log</h1>
     <div class="date" id="date"></div>
@@ -167,6 +191,26 @@
 
   <h2>History</h2>
   <section class="card"><ul class="hist" id="hist"></ul></section>
+</main>
+
+<main id="runsView" hidden>
+  <header>
+    <h1>Run analytics</h1>
+    <a class="back" href="#">← Lift Log</a>
+  </header>
+  <div class="chips" id="anRange"></div>
+
+  <h2>Trend</h2>
+  <section class="card" id="anTrend"></section>
+
+  <h2>Year over year</h2>
+  <section class="card" id="anYoy"></section>
+
+  <h2>Records <span class="tap-hint">all time</span></h2>
+  <section id="anRecs"></section>
+
+  <h2>Patterns</h2>
+  <section class="card" id="anPat"></section>
 </main>
 
 <script>
@@ -730,14 +774,285 @@ function renderRunning(data) {
   const status = left <= 0 ? `Goal reached` : `${Math.abs(diff).toFixed(1)} mi ${diff >= 0 ? "ahead of" : "behind"} pace · ${(left / daysLeft).toFixed(1)} mi/day to finish`;
   el.innerHTML = `<div class="goal-head"><div><div class="v">${total.toFixed(1)}<small> of ${goal.toLocaleString()} mi</small></div><div class="l">${status}</div></div></div>
     <div class="goal-bar"><span style="width:${Math.min(100, total / goal * 100)}%"></span><em style="left:${Math.min(100, onPace / goal * 100)}%"></em></div>
-    <div class="run-sub">${year} so far<span class="tap-hint">tap for months</span></div>${svg}<div class="run-sub">Weekly miles<span class="tap-hint">tap a week</span></div>${svg2}`;
+    <div class="run-sub">${year} so far<span class="tap-hint">tap for months</span></div>${svg}<div class="run-sub">Weekly miles<span class="tap-hint">tap a week</span></div>${svg2}
+    <a class="run-link" href="#runs">Run analytics →</a>`;
   makeTappable(el.querySelector(".year-svg"), `${year} miles by month`, () => showYearBreakdown(data, year));
   el.querySelectorAll(".wk").forEach(g => g.addEventListener("click", () => showWeekBreakdown(data, weeks[+g.dataset.w])));
+}
+
+// ================= Run analytics view (#runs) =================
+// Runs split by a gym stop are several Strava activities; analytics works per day where "a run" matters.
+const AN = { range: "1Y", metric: "miles" };
+const RANGES = [["3M", 91], ["6M", 182], ["1Y", 365], ["2Y", 730], ["All", 0]];
+const METRICS = [["miles", "Miles"], ["long", "Long run"], ["pace", "Pace"], ["hr", "Heart rate"], ["beats", "Beats/mile"]];
+const YEAR_COLORS = ["#d2581f", "#a3489a", "#3a8a5a", "#8a9a2b", "#b8b6ae"]; // last year, the year before, …
+const mmss = m => { const sec = Math.round(m * 60); return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`; };
+const median = a => { if (!a.length) return null; const b = [...a].sort((x, y) => x - y), h = b.length >> 1; return b.length % 2 ? b[h] : (b[h - 1] + b[h]) / 2; };
+function niceTicks(lo, hi, n = 4) {
+  const span = hi - lo || 1, raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(k => k * mag).find(k => span / k <= n) || mag * 10;
+  const out = []; for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(6)); return out;
+}
+// One record per day: total miles, moving minutes, time-weighted HR, peak HR, climbing.
+function runDays(runs) {
+  const m = {};
+  runs.forEach(r => {
+    const d = (m[r.date] ||= { date: r.date, mi: 0, min: 0, hrSum: 0, hrMin: 0, maxHr: 0, up: 0, n: 0 });
+    d.mi += r.mi; d.min += r.min; d.up += Number(r.elev_ft || 0); d.n++;
+    if (Number(r.avg_hr)) { d.hrSum += Number(r.avg_hr) * r.min; d.hrMin += r.min; }
+    d.maxHr = Math.max(d.maxHr, Number(r.max_hr) || 0);
+  });
+  return Object.values(m).sort((a, b) => a.date < b.date ? -1 : 1).map(d => ({ ...d, hr: d.hrMin ? d.hrSum / d.hrMin : 0, pace: d.mi ? d.min / d.mi : 0 }));
+}
+// Runs fit for pace/HR trends: real runs (not walks or GPS junk).
+const isRealRun = r => r.mi >= 1 && r.min / r.mi >= 5.5 && r.min / r.mi <= 12.5;
+
+function rangeStart(days, today) {
+  const len = RANGES.find(r => r[0] === AN.range)[1];
+  if (!len) return parseDate(days[0].date);
+  const a = new Date(today); a.setDate(a.getDate() - len + 1); return a;
+}
+function bucketsFor(start, end, weekly) {
+  const out = [];
+  if (weekly) { for (let a = weekStart(start); a <= end; ) { const b = new Date(a); b.setDate(b.getDate() + 7); out.push({ a, b, label: fmt(iso(a)), kind: "week" }); a = b; } }
+  else { for (let a = new Date(start.getFullYear(), start.getMonth(), 1); a <= end; ) { const b = new Date(a.getFullYear(), a.getMonth() + 1, 1); out.push({ a, b, label: a.toLocaleDateString(undefined, { month: "short", year: "2-digit" }), kind: "month" }); a = b; } }
+  return out;
+}
+
+function renderAnalytics(data) {
+  const { runs } = data;
+  const rangeEl = document.getElementById("anRange");
+  rangeEl.innerHTML = RANGES.map(([k]) => `<button class="${AN.range === k ? "on" : ""}" data-k="${k}">${k === "All" ? "All time" : k}</button>`).join("");
+  rangeEl.querySelectorAll("button").forEach(b => b.onclick = () => { AN.range = b.dataset.k; renderAnalytics(data); });
+  if (!runs.length) { document.getElementById("anTrend").innerHTML = `<p class="empty">No runs yet.</p>`; return; }
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const days = runDays(runs);
+  const start = rangeStart(days, today);
+  renderTrend(data, days, start, today);
+  renderYoy(data, today);
+  renderRecords(data, days);
+  renderPatterns(days, start);
+}
+
+function renderTrend(data, days, start, today) {
+  const el = document.getElementById("anTrend");
+  const W = Math.max(260, Math.floor(el.clientWidth - 32));
+  const inR = (d, a, b) => { const t = parseDate(d); return t >= a && t < b; };
+  const end = new Date(today); end.setDate(end.getDate() + 1);
+  const span = Math.round((end - start) / 864e5);
+  const weekly = span <= 190;
+  const B = bucketsFor(start, today, weekly);
+  const runsR = data.runs.filter(r => inR(r.date, start, end)), daysR = days.filter(d => inR(d.date, start, end));
+  // Same-length period just before, for the change arrows.
+  const pStart = new Date(start); pStart.setDate(pStart.getDate() - span);
+  const runsP = data.runs.filter(r => inR(r.date, pStart, start));
+  const stat = rs => { const real = rs.filter(isRealRun), hr = real.filter(r => Number(r.avg_hr));
+    const mi = rs.reduce((a, r) => a + r.mi, 0);
+    return { mi, days: new Set(rs.map(r => r.date)).size, pace: real.length ? real.reduce((a, r) => a + r.min, 0) / real.reduce((a, r) => a + r.mi, 0) : 0,
+      hr: hr.length ? hr.reduce((a, r) => a + Number(r.avg_hr) * r.min, 0) / hr.reduce((a, r) => a + r.min, 0) : 0 }; };
+  const S = stat(runsR), P = AN.range === "All" ? null : stat(runsP);
+  const wk = span / 7;
+  const chg = (cur, prev, better, fmtD) => { if (!P || !prev || !cur) return ""; const d = cur - prev; if (Math.abs(d) < 1e-9) return ""; const good = better === "up" ? d > 0 : d < 0;
+    return ` <em class="${good ? "up" : "down"}">${d > 0 ? "▲" : "▼"} ${fmtD(Math.abs(d))}</em>`; };
+  const sum = `<div class="an-sum">
+    <div><b>${lb(S.mi)}</b><span>miles${chg(S.mi, P?.mi, "up", v => lb(v))}</span></div>
+    <div><b>${(S.mi / wk).toFixed(1)}</b><span>mi/week</span></div>
+    <div><b>${S.days}</b><span>run days${chg(S.days, P?.days, "up", v => Math.round(v))}</span></div>
+    <div><b>${S.pace ? mmss(S.pace) : "–"}</b><span>avg pace${chg(S.pace, P?.pace, "down", v => Math.round(v * 60) + "s")}</span></div>
+    <div><b>${S.hr ? Math.round(S.hr) : "–"}</b><span>avg HR${chg(S.hr, P?.hr, "down", v => Math.round(v))}</span></div>
+    <div><b>${S.hr && S.pace ? lb(S.hr * S.pace) : "–"}</b><span>beats/mile${chg(S.hr * S.pace, P && P.hr * P.pace, "down", v => lb(v))}</span></div>
+  </div>`;
+  const metricChips = `<div class="chips">${METRICS.map(([k, l]) => `<button class="${AN.metric === k ? "on" : ""}" data-m="${k}">${l}</button>`).join("")}</div>`;
+
+  // Per-bucket values and per-day dots for the chosen metric.
+  const M = AN.metric;
+  const realRunsR = runsR.filter(isRealRun);
+  const val = {
+    miles: rs => rs.reduce((a, r) => a + r.mi, 0),
+    long: (rs, ds) => Math.max(0, ...ds.map(d => d.mi)),
+    pace: rs => { const x = rs.filter(isRealRun); return x.length ? x.reduce((a, r) => a + r.min, 0) / x.reduce((a, r) => a + r.mi, 0) : null; },
+    hr: rs => median(rs.filter(r => isRealRun(r) && Number(r.avg_hr)).map(r => Number(r.avg_hr))),
+    beats: rs => median(rs.filter(r => isRealRun(r) && Number(r.avg_hr)).map(r => Number(r.avg_hr) * r.min / r.mi)),
+  }[M];
+  B.forEach(b => { b.rs = runsR.filter(r => inR(r.date, b.a, b.b)); b.ds = daysR.filter(d => inR(d.date, b.a, b.b)); b.v = b.rs.length ? val(b.rs, b.ds) : null; });
+  const dots = M === "pace" ? realRunsR.map(r => ({ d: r.date, v: r.min / r.mi }))
+    : M === "hr" ? realRunsR.filter(r => Number(r.avg_hr)).map(r => ({ d: r.date, v: Number(r.avg_hr) }))
+    : M === "beats" ? realRunsR.filter(r => Number(r.avg_hr)).map(r => ({ d: r.date, v: Number(r.avg_hr) * r.min / r.mi }))
+    : M === "long" ? daysR.map(d => ({ d: d.date, v: d.mi })) : [];
+  const isBar = M === "miles" || M === "long";
+  const invert = M === "pace" || M === "beats" || M === "hr"; // up = better
+  const vals = [...B.map(b => b.v).filter(v => v != null), ...(isBar ? [] : dots.map(p => p.v))];
+  let lo = isBar ? 0 : Math.min(...vals), hi = Math.max(...vals);
+  if (!isBar) { // keep the line readable: clip extreme dots to the middle 96%
+    const sv = dots.map(p => p.v).sort((a, b) => a - b);
+    if (sv.length > 20) { lo = Math.min(lo, sv[Math.floor(sv.length * .02)]); hi = Math.max(...B.map(b => b.v).filter(v => v != null), sv[Math.floor(sv.length * .98)]); lo = Math.min(lo, ...B.map(b => b.v).filter(v => v != null)); }
+    const pad = (hi - lo) * .08 || 1; lo -= pad; hi += pad;
+  } else hi *= 1.12;
+  const H = 210, Pd = { l: 38, r: 6, t: 12, b: 24 };
+  const t0 = B[0].a.getTime(), t1 = B.at(-1).b.getTime();
+  const x = t => Pd.l + (t - t0) / (t1 - t0) * (W - Pd.l - Pd.r);
+  const y = v => { const f = (v - lo) / (hi - lo); return Pd.t + (invert ? f : 1 - f) * (H - Pd.t - Pd.b); };
+  const yF = M === "pace" ? mmss : v => lb(v);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img">`;
+  niceTicks(lo, hi, 4).forEach(v => svg += `<line x1="${Pd.l}" x2="${W - Pd.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${Pd.l - 6}" y="${y(v) + 4}" text-anchor="end">${yF(v)}</text>`);
+  // x labels: about one per 60px
+  const every = Math.max(1, Math.ceil(B.length / Math.floor((W - Pd.l) / 60)));
+  B.forEach((b, i) => { if (i % every === 0) svg += `<text x="${x(b.a.getTime()) + 2}" y="${H - 6}">${b.label}</text>`; });
+  const clamp = v => Math.max(lo, Math.min(hi, v));
+  if (!isBar) dots.forEach(p => { const t = parseDate(p.d).getTime(); svg += `<circle cx="${x(t)}" cy="${y(clamp(p.v))}" r="2.2" fill="var(--run)" opacity=".22"/>`; });
+  B.forEach((b, i) => {
+    const xa = x(b.a.getTime()), xb = x(Math.min(b.b.getTime(), t1)), w = xb - xa;
+    svg += `<g data-b="${i}"><rect x="${xa}" y="${Pd.t}" width="${w}" height="${H - Pd.t - Pd.b}" fill="transparent"/>`;
+    if (isBar && b.v) { const bw = Math.max(2, w * .72); svg += `<rect x="${xa + (w - bw) / 2}" y="${y(b.v)}" width="${bw}" height="${y(0) - y(b.v)}" rx="${Math.min(3, bw / 3)}" fill="var(--run)" opacity="${b.b > today ? .55 : 1}"/>`; }
+    svg += `<title>${b.kind === "week" ? "Week of " + b.label : b.label}: ${b.v == null ? "no runs" : (M === "pace" ? mmss(b.v) + "/mi" : M === "hr" ? Math.round(b.v) + " bpm" : M === "beats" ? lb(b.v) + " beats/mi" : b.v.toFixed(1) + " mi")}</title></g>`;
+  });
+  if (isBar) { // rolling average of the last 4 buckets
+    const pts = B.map((b, i) => { const w4 = B.slice(Math.max(0, i - 3), i + 1).map(z => z.v || 0); return `${x((b.a.getTime() + b.b.getTime()) / 2)},${y(w4.reduce((a, v) => a + v, 0) / w4.length)}`; });
+    if (M === "miles") svg += `<polyline fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linejoin="round" points="${pts.join(" ")}" pointer-events="none"/>`;
+  } else {
+    const pts = B.filter(b => b.v != null).map(b => `${x((b.a.getTime() + b.b.getTime()) / 2)},${y(b.v)}`);
+    svg += `<polyline fill="none" stroke="var(--run)" stroke-width="2.5" stroke-linejoin="round" points="${pts.join(" ")}" pointer-events="none"/>`;
+    B.forEach(b => { if (b.v != null) svg += `<circle cx="${x((b.a.getTime() + b.b.getTime()) / 2)}" cy="${y(b.v)}" r="3" fill="var(--run)" pointer-events="none"/>`; });
+  }
+  svg += `</svg>`;
+  const unitW = weekly ? "week" : "month";
+  const note = {
+    miles: `Bars are miles per ${unitW}; the line is the ${weekly ? "4-week" : "4-month"} average.`,
+    long: `Longest day per ${unitW}. A run split by a gym stop counts as one day. Dots are every run day.`,
+    pace: `Average pace per ${unitW}, faster is higher. Dots are single runs; walks and runs under a mile are left out.`,
+    hr: `Median average heart rate per ${unitW}, lower is higher on the chart. Dots are single runs.`,
+    beats: `Heartbeats per mile = average heart rate × pace. Fewer beats for the same mile means fitter; lower is higher on the chart.`,
+  }[M];
+  el.innerHTML = `${metricChips}${sum}<div class="an-plot"></div><div class="an-note">${note} Tap a ${unitW} for its runs.</div>`;
+  el.querySelector(".an-plot").innerHTML = svg;
+  el.querySelectorAll(".chips button").forEach(b => b.onclick = () => { AN.metric = b.dataset.m; renderTrend(data, days, start, today); });
+  el.querySelectorAll("g[data-b]").forEach(g => g.addEventListener("click", () => {
+    const b = B[+g.dataset.b];
+    b.kind === "week" ? showWeekBreakdown(data, b.a) : showMonthBreakdown(data, b.a.getFullYear(), b.a.getMonth());
+  }));
+}
+
+// Cumulative miles by day of year, one line per year.
+function renderYoy(data, today) {
+  const el = document.getElementById("anYoy");
+  const W = Math.max(260, Math.floor(el.clientWidth - 32)), H = 220, Pd = { l: 38, r: 8, t: 10, b: 22 };
+  const years = [...new Set(data.runs.map(r => +r.date.slice(0, 4)))].sort();
+  const cy = today.getFullYear();
+  const doy = d => (parseDate(d) - new Date(parseDate(d).getFullYear(), 0, 1)) / 864e5;
+  const todayDoy = (today - new Date(cy, 0, 1)) / 864e5;
+  const series = years.map((yr, i) => {
+    const rs = data.runs.filter(r => r.date.startsWith(yr + "")).sort((a, b) => a.date < b.date ? -1 : 1);
+    let acc = 0; const pts = [[0, 0]]; rs.forEach(r => { acc += r.mi; pts.push([doy(r.date), acc]); });
+    const sameDay = rs.filter(r => doy(r.date) <= todayDoy).reduce((a, r) => a + r.mi, 0);
+    if (yr === cy) pts.push([todayDoy, acc]); else pts.push([365, acc]);
+    return { yr, pts, total: acc, sameDay, color: yr === cy ? "var(--run)" : YEAR_COLORS[Math.min(YEAR_COLORS.length - 1, cy - yr - 1)] };
+  });
+  const goal = data.plan.running?.yearGoalMi || 1000;
+  const hi = Math.max(goal, ...series.map(s => s.total)) * 1.05;
+  const x = d => Pd.l + d / 365 * (W - Pd.l - Pd.r), y = v => Pd.t + (1 - v / hi) * (H - Pd.t - Pd.b);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img">`;
+  niceTicks(0, hi, 4).forEach(v => svg += `<line x1="${Pd.l}" x2="${W - Pd.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${Pd.l - 6}" y="${y(v) + 4}" text-anchor="end">${lb(v)}</text>`);
+  ["Jan", "Apr", "Jul", "Oct"].forEach((m, i) => svg += `<text x="${x(i * 91.25)}" y="${H - 6}">${m}</text>`);
+  svg += `<line x1="${x(0)}" y1="${y(0)}" x2="${x(365)}" y2="${y(goal)}" stroke="var(--muted)" stroke-dasharray="4 4"/><text x="${x(365) - 2}" y="${y(goal) - 5}" text-anchor="end">${lb(goal)} goal</text>`;
+  svg += `<line x1="${x(todayDoy)}" x2="${x(todayDoy)}" y1="${Pd.t}" y2="${H - Pd.b}" stroke="var(--line)" stroke-dasharray="2 3"/>`;
+  series.forEach(s => {
+    const cur = s.yr === cy;
+    svg += `<polyline data-y="${s.yr}" fill="none" stroke="${s.color}" stroke-width="${cur ? 3 : 2}" stroke-linejoin="round" opacity="${cur ? 1 : .85}" points="${s.pts.map(([d, v]) => `${x(d)},${y(v)}`).join(" ")}"/>`;
+  });
+  svg += `</svg>`;
+  const curS = series.find(s => s.yr === cy), prevS = series.find(s => s.yr === cy - 1);
+  const lead = curS && prevS ? `By ${fmt(iso(today))}: ${lb(curS.sameDay)} mi this year vs ${lb(prevS.sameDay)} in ${cy - 1} (${curS.sameDay >= prevS.sameDay ? "+" : "−"}${lb(Math.abs(curS.sameDay - prevS.sameDay))}).` : "";
+  el.innerHTML = `<div class="chart-sub" style="font-size:13px;color:var(--ink)">${lead}</div>
+    <div class="yoy-key">${series.slice().reverse().map(s => `<button data-y="${s.yr}"><i style="background:${s.color}"></i>${s.yr}<small>${lb(s.total)} mi${s.yr !== cy ? ` · ${lb(s.sameDay)} by now` : ""}</small></button>`).join("")}</div>${svg}
+    <div class="an-note">Tap a year for its months.</div>`;
+  el.querySelectorAll("[data-y]").forEach(b => b.addEventListener("click", () => showYearBreakdown(data, +b.dataset.y)));
+}
+
+function renderRecords(data, days) {
+  const el = document.getElementById("anRecs");
+  const by = (keyFn) => { const m = {}; days.forEach(d => { const k = keyFn(d); (m[k] ||= { k, mi: 0, days: [] }); m[k].mi += d.mi; m[k].days.push(d); }); return Object.values(m); };
+  const weeks = by(d => iso(weekStart(parseDate(d.date)))), months = by(d => d.date.slice(0, 7));
+  const bw = weeks.reduce((b, w) => w.mi > b.mi ? w : b), bm = months.reduce((b, w) => w.mi > b.mi ? w : b);
+  const ld = days.reduce((b, d) => d.mi > b.mi ? d : b);
+  const climb = days.reduce((b, d) => d.up > b.up ? d : b);
+  const fast = data.runs.filter(r => r.mi >= 3.1 && isRealRun(r)).reduce((b, r) => !b || r.min / r.mi < b.min / b.mi ? r : b, null);
+  let best = 0, cur = 0, bestEnd = null, prev = null;
+  days.forEach(d => { const t = parseDate(d.date); cur = prev && (t - prev) / 864e5 === 1 ? cur + 1 : 1; if (cur > best) { best = cur; bestEnd = d.date; } prev = t; });
+  const total = data.runs.reduce((a, r) => a + r.mi, 0);
+  const monthName = k => new Date(+k.slice(0, 4), +k.slice(5, 7) - 1, 1).toLocaleDateString(undefined, { month: "short", year: "numeric" });
+  const wkOf = d => weekStart(parseDate(d));
+  const tiles = [
+    [bw.mi.toFixed(1) + " mi", `biggest week · ${fmt(bw.k)}, ${bw.k.slice(0, 4)}`, () => showWeekBreakdown(data, parseDate(bw.k))],
+    [bm.mi.toFixed(0) + " mi", `biggest month · ${monthName(bm.k)}`, () => showMonthBreakdown(data, +bm.k.slice(0, 4), +bm.k.slice(5, 7) - 1)],
+    [ld.mi.toFixed(1) + " mi", `longest day · ${fmt(ld.date)}, ${ld.date.slice(0, 4)}`, () => showWeekBreakdown(data, wkOf(ld.date))],
+    [fast ? mmss(fast.min / fast.mi) + "/mi" : "–", fast ? `fastest 5K+ · ${fast.mi.toFixed(1)} mi, ${fmt(fast.date)} ${fast.date.slice(0, 4)}` : "fastest 5K+", fast ? () => showWeekBreakdown(data, wkOf(fast.date)) : null],
+    [lb(climb.up) + " ft", `most climbing · ${fmt(climb.date)}, ${climb.date.slice(0, 4)}`, () => showWeekBreakdown(data, wkOf(climb.date))],
+    [best + " days", `longest streak · ended ${bestEnd ? fmt(bestEnd) + ", " + bestEnd.slice(0, 4) : ""}`, null],
+    [lb(total) + " mi", `all time · since ${fmt(days[0].date)}, ${days[0].date.slice(0, 4)}`, null],
+    [lb(days.length), `run days · ${(total / days.length).toFixed(1)} mi average`, null],
+  ];
+  el.innerHTML = `<div class="recs">${tiles.map(([v, l, go], i) => `<${go ? "button" : "div"} class="rec" data-i="${i}"><b>${v}</b><span>${l}</span></${go ? "button" : "div"}>`).join("")}</div>`;
+  el.querySelectorAll("button.rec").forEach(b => b.onclick = tiles[+b.dataset.i][2]);
+}
+
+// Miles by weekday and how long your run days are, for the chosen range.
+function renderPatterns(days, start) {
+  const el = document.getElementById("anPat");
+  const ds = days.filter(d => parseDate(d.date) >= start);
+  const W = Math.max(240, Math.floor((el.clientWidth - 32) / (window.innerWidth >= 640 ? 2 : 1) - (window.innerWidth >= 640 ? 8 : 0)));
+  const bars = (labels, vals, fmtV, title) => {
+    const H = 150, Pd = { l: 4, r: 4, t: 18, b: 22 }, top = Math.max(...vals, 1) * 1.15;
+    const slot = (W - Pd.l - Pd.r) / labels.length, bw = Math.min(30, slot * .7), y = v => Pd.t + (1 - v / top) * (H - Pd.t - Pd.b);
+    let s = `<div><div class="run-sub">${title}</div><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}"><line x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}" stroke="var(--line)"/>`;
+    labels.forEach((l, i) => { const cx = Pd.l + slot * (i + .5), v = vals[i];
+      if (v) s += `<rect x="${cx - bw / 2}" y="${y(v)}" width="${bw}" height="${y(0) - y(v)}" rx="3" fill="var(--run)"/><text class="pt" x="${cx}" y="${y(v) - 5}" text-anchor="middle">${fmtV(v)}</text>`;
+      s += `<text x="${cx}" y="${H - 6}" text-anchor="middle">${l}</text>`; });
+    return s + `</svg></div>`;
+  };
+  const wd = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], nWeeks = Math.max(1, (Date.now() - start) / 6048e5);
+  const byWd = wd.map((_, i) => ds.filter(d => (parseDate(d.date).getDay() + 6) % 7 === i).reduce((a, d) => a + d.mi, 0) / nWeeks);
+  const bins = [[0, 2, "<2"], [2, 3, "2–3"], [3, 4, "3–4"], [4, 5, "4–5"], [5, 7, "5–7"], [7, 10, "7–10"], [10, 1e9, "10+"]];
+  const byLen = bins.map(([a, b]) => ds.filter(d => d.mi >= a && d.mi < b).length);
+  el.innerHTML = `<div class="pat">${bars(wd, byWd, v => v.toFixed(1), "Average miles by weekday")}${bars(bins.map(b => b[2]), byLen, v => v, "Run days by distance (mi)")}</div>`;
+}
+
+// Tap a month: its run days, with a donut of miles by week.
+function showMonthBreakdown(data, year, month) {
+  const a = new Date(year, month, 1), b = new Date(year, month + 1, 1);
+  const days = runDays(data.runs.filter(r => { const t = parseDate(r.date); return t >= a && t < b; }));
+  const weeks = [...new Set(days.map(d => iso(weekStart(parseDate(d.date)))))];
+  const wkIdx = d => weeks.indexOf(iso(weekStart(parseDate(d.date))));
+  const items = weeks.map((w, i) => ({ label: "Week of " + fmt(w), value: days.filter(d => wkIdx(d) === i).reduce((s, d) => s + d.mi, 0), color: SLICE_COLORS[i] }));
+  const s = runDaySummary(data.runs.filter(r => { const t = parseDate(r.date); return t >= a && t < b; }));
+  const title = a.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  const body = `<div class="bd-top">${donutSVG(items)}<div class="bd-kpis"><div><b>${s.mi.toFixed(1)}</b>miles</div><div><b>${pace(s) || "–"}</b>avg pace</div><div><b>${s.avgHr || "–"}</b>avg heart rate</div></div></div>
+    <div class="bd-scroll"><table class="bd-t"><thead><tr><th>Day</th><th class="num">Miles</th><th class="num">Pace</th><th class="num">HR</th></tr></thead><tbody>
+    ${days.slice().reverse().map(d => { const i = wkIdx(d); return `<tr data-r="${i}"><td><i style="background:${items[i].color}"></i>${dateOf(d.date)}${d.n > 1 ? `<span class="sets">${d.n} parts</span>` : ""}</td><td class="num">${d.mi.toFixed(1)}</td><td class="num">${d.pace ? mmss(d.pace) : ""}</td><td class="num">${d.hr ? Math.round(d.hr) + " / " + d.maxHr : ""}</td></tr>`; }).join("")}
+    </tbody></table></div>`;
+  openBreakdown(title, `${days.length} run days · donut by week · tap a slice`, body, dlg => {
+    dlg.querySelectorAll(".slice").forEach(el => el.addEventListener("click", () => {
+      dlg.querySelectorAll("tr.on").forEach(x => x.classList.remove("on"));
+      dlg.querySelectorAll(".slice").forEach(x => x.classList.toggle("on", x === el));
+      dlg.querySelector("svg.donut").classList.add("dim");
+      const rows = dlg.querySelectorAll(`tr[data-r="${el.dataset.i}"]`); rows.forEach(r => r.classList.add("on"));
+      rows[0]?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }));
+  });
+}
+
+// Simple router: #runs shows the analytics view.
+function route(data) {
+  const runsView = location.hash === "#runs";
+  document.getElementById("mainView").hidden = runsView;
+  document.getElementById("runsView").hidden = !runsView;
+  if (runsView) { window.scrollTo(0, 0); renderAnalytics(data); }
 }
 
 document.getElementById("date").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
 load().then(data => {
   renderDays(data); renderStats(data); renderRunning(data); onResize(() => renderRunning(data)); renderVolume(data); onResize(() => renderVolume(data)); renderCharts(data); renderHeat(data); renderHistory(data);
+  route(data); window.addEventListener("hashchange", () => route(data));
+  onResize(() => { if (location.hash === "#runs") renderAnalytics(data); });
 }).catch(e => {
   document.getElementById("today").innerHTML = `<p class="err">Couldn't load data: ${esc(e.message)}</p>`;
 });
