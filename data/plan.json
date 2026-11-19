@@ -60,10 +60,6 @@
       "sets": 2,
       "step": 10,
       "cue": "Knee tracks over toes. Stop at 90° knee bend, hips and lower back stay on the pad",
-      "next": {
-        "weight": 140,
-        "reason": "second set at 140 was near failure"
-      },
       "group": "Quads & glutes"
     },
     "Hip abduction": {
@@ -74,11 +70,7 @@
       "sets": 2,
       "step": 5,
       "cue": "Sit all the way back. Slow, 1–2 s hold at the widest point",
-      "group": "Hips",
-      "next": {
-        "weight": 175,
-        "reason": "175 × 5 is a true max seated fully back"
-      }
+      "group": "Hips"
     },
     "Seated calf raise": {
       "sides": [

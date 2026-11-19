@@ -55,6 +55,7 @@ An exercise in `plan.json` can carry `"next": {"weight": 60, "reason": "knee cau
 - Tuesday hamstrings now on the lying (prone) curl; Nov 3 the right leg pulled harder than the left.
 - Nov 4: said lifting every day felt like overworking. If he's tired, offer a lighter day or a different muscle group rather than pushing the plan. He finds the Pallof press boring: at most once a week, on an ab day.
 - Single-leg press depth: stop at a 90° knee bend every time so numbers stay comparable. Abduction: sit all the way back (175 is near max that way).
+- Nov 19: sensation on the outside of the right knee (IT band area), not pain or soreness; it eased off while lifting. Ask about it before leg work and after long runs (Tellico ~20 mi Nov 21–22). If it turns into pain, ease leg work and keep hip abduction.
 - Mobility: he won't get on the floor, so use standing stretches only. On voice, give one short instruction at a time; he times holds himself.
 
 - Calories on the page are a rough estimate: MET (5 for lifting, 2.3 for mobility) × body weight × minutes, from `plan.json` → `bodyweightLb` and `calories`. Missing minutes count as 10. Update `bodyweightLb` if he gives a new weight (Nov 3: 160 lb; Nov 7: 155 lb).
